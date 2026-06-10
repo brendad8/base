@@ -11,7 +11,7 @@ typedef struct string string;
 struct string 
 { 
     char* ptr; 
-    uint64 len; 
+    uint64_t len; 
 };
 
 typedef struct stringNode stringNode;
@@ -26,35 +26,35 @@ struct stringList
 {
     stringNode* first;
     stringNode* last;
-    uint64 node_count;
-    uint64 total_size;
+    uint64_t node_count;
+    uint64_t total_size;
 };
 
 typedef struct stringArray stringArray;
 struct stringArray
 {
     string* v;
-    uint64 len;
-    uint64 capacity;
+    uint64_t len;
+    uint64_t capacity;
 };
 
 #define str_lit(s)  str_new((char*)(s), sizeof(s) - 1)
 #define str_varg(s) (int)((s).len), ((s).ptr)
 
-string str_new(char* ptr, uint64 len);
+string str_new(char* ptr, uint64_t len);
 string str_from_cstr(char* ptr);
 
-bool32 str_equal(string a, string b);
-int32  str_compare(string a, string b);
-bool32 str_contains(string s, string pattern);
-bool32 str_starts_with(string s, string prefix);
-bool32 str_ends_with(string s, string suffix);
+bool32  str_equal(string a, string b);
+int32_t str_compare(string a, string b);
+bool32  str_contains(string s, string pattern);
+bool32  str_starts_with(string s, string prefix);
+bool32  str_ends_with(string s, string suffix);
 
-int32 str_find_idx_first(string s, string pattern);
-int32 str_find_idx_last(string s, string pattern);
+int32_t str_find_idx_first(string s, string pattern);
+int32_t str_find_idx_last(string s, string pattern);
 
-string str_slice_idx(string s, uint64 start, uint64 end);
-string str_slice_len(string s, uint64 start, uint64 length);
+string str_slice_idx(string s, uint64_t start, uint64_t end);
+string str_slice_len(string s, uint64_t start, uint64_t length);
 
 string str_remove_prefix(string s, string prefix);
 string str_remove_suffix(string s, string suffix);
@@ -79,11 +79,11 @@ bool32 char_is_upper(char c);
 bool32 char_is_lower(char c);
 bool32 char_is_alpha(char c);
 bool32 char_is_slash(char c);
-bool32 char_is_digit(char c, uint32 base);
+bool32 char_is_digit(char c, uint32_t base);
 char   char_to_lower(char c);
 char   char_to_upper(char c);
 
-uint64 cstr_length(char* c);
+uint64_t cstr_length(char* c);
 
 #endif // BASE_STRING_H
 

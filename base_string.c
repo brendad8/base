@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 /*********************************************************************************/
-string str_new(char* ptr, uint64 len) 
+string str_new(char* ptr, uint64_t len) 
 {
     string s = { ptr, len };
     return s;
@@ -28,23 +28,23 @@ bool32 str_equal(string a, string b)
 }
 
 /*********************************************************************************/
-int32 str_compare(string a, string b) 
+int32_t str_compare(string a, string b) 
 {
-    uint64 min_len = a.len < b.len ? a.len : b.len;
+    uint64_t min_len = a.len < b.len ? a.len : b.len;
     int cmp = memcmp(a.ptr, b.ptr, min_len);
 
     return cmp != 0 ? cmp : (int)(a.len - b.len);
 }
 
 /*********************************************************************************/
-int32 str_find_idx_first(string s, string pattern)
+int32_t str_find_idx_first(string s, string pattern)
 {
     if (s.len < pattern.len || pattern.len == 0) 
         return -1;
 
-    for (int32 i = 0; i <= (s.len - pattern.len); i++) 
+    for (int32_t i = 0; i <= (s.len - pattern.len); i++) 
     {
-        for (int32 j = 0; j < pattern.len; j++) 
+        for (int32_t j = 0; j < pattern.len; j++) 
         {
             if (s.ptr[i+j] != pattern.ptr[j]) 
                 break; 
@@ -56,14 +56,14 @@ int32 str_find_idx_first(string s, string pattern)
 }
 
 /*********************************************************************************/
-int32 str_find_idx_last(string s, string pattern)
+int32_t str_find_idx_last(string s, string pattern)
 {
     if (s.len < pattern.len || pattern.len == 0) 
         return -1;
 
-    for (int32 i = s.len - 1; i >= pattern.len - 1; i--) 
+    for (int32_t i = s.len - 1; i >= pattern.len - 1; i--) 
     {
-        for (int32 j = 0; j < pattern.len; j++) 
+        for (int32_t j = 0; j < pattern.len; j++) 
         {
             if (s.ptr[i-j] != pattern.ptr[pattern.len - j - 1]) 
                 break; 
@@ -81,7 +81,7 @@ bool32 str_contains(string s, string pattern)
 }
 
 /*********************************************************************************/
-string str_slice_idx(string s, uint64 start, uint64 end)
+string str_slice_idx(string s, uint64_t start, uint64_t end)
 {
     end = MIN(end, s.len);
     start = MIN(start, end);
@@ -90,7 +90,7 @@ string str_slice_idx(string s, uint64 start, uint64 end)
 }
 
 /*********************************************************************************/
-string str_slice_len(string s, uint64 start, uint64 length) 
+string str_slice_len(string s, uint64_t start, uint64_t length) 
 {
     length = CLAMP_TOP(s.len - start, length);
     return str_new(s.ptr + start, length);
@@ -170,7 +170,7 @@ string str_copy(Arena *arena, string s)
 {
     string res;
     res.len = s.len;
-    res.ptr = arena_push_array_no_zero(arena, char, res.len + 1);
+    res.ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, res.len + 1);
     memmove(res.ptr, s.ptr, s.len);
     res.ptr[res.len] = 0;
     return res;
@@ -181,7 +181,7 @@ string str_cat(Arena *arena, string a, string b)
 {
     string res;
     res.len = a.len + b.len;
-    res.ptr = arena_push_array_no_zero(arena, char, res.len + 1);
+    res.ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, res.len + 1);
     memmove(res.ptr, a.ptr, a.len);
     memmove(res.ptr + a.len, b.ptr, b.len);
     res.ptr[res.len] = 0;
@@ -193,9 +193,9 @@ string str_printfv(Arena *arena, char* fmt, va_list args)
 {
     va_list args2;
     va_copy(args2, args);
-    uint32 needed_bytes = vsnprintf(0, 0, fmt, args) + 1;
+    uint32_t needed_bytes = vsnprintf(0, 0, fmt, args) + 1;
     string result = {0};
-    result.ptr = arena_push_array_no_zero(arena, char, needed_bytes);
+    result.ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, needed_bytes);
     result.len = vsnprintf((char*)result.ptr, needed_bytes, fmt, args2);
     result.ptr[result.len] = 0;
     va_end(args2);
@@ -214,8 +214,8 @@ string str_printf(Arena *arena, char *fmt, ...)
 /*********************************************************************************/
 string str_to_lower(Arena* arena, string s)
 {
-    char* ptr = arena_push_array_no_zero(arena, char, s.len);
-    for (uint64 i = 0; i < s.len; i++)
+    char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len);
+    for (uint64_t i = 0; i < s.len; i++)
         ptr[i] = char_to_lower(s.ptr[i]);
 
     return str_new(ptr, s.len);
@@ -224,44 +224,44 @@ string str_to_lower(Arena* arena, string s)
 /*********************************************************************************/
 string str_to_upper(Arena* arena, string s)
 {
-    char* ptr = arena_push_array_no_zero(arena, char, s.len);
-    for (uint64 i = 0; i < s.len; i++)
+    char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len);
+    for (uint64_t i = 0; i < s.len; i++)
         ptr[i] = char_to_upper(s.ptr[i]);
 
     return str_new(ptr, s.len);
 }
 
 /*********************************************************************************/
-stringList str_split(Arena* arena, string s, string delim)
-{
-    stringList list = {0};
-    string iter_str = s;
-    for (;;)
-    {
-        int32 idx = str_find_idx_first(s, delim);
-        if (idx == -1)
-        {
+// stringList str_split(Arena* arena, string s, string delim)
+// {
+//     stringList list = {0};
+//     string iter_str = s;
+//     for (;;)
+//     {
+//         int32_t idx = str_find_idx_first(s, delim);
+//         if (idx == -1)
+//         {
+//
+//         }
+//         string split = 
+//     }
+// }
 
-        }
-        string split = 
-    }
-}
-
-stringList str_split(Arena* arena, string chars, string delim)
-{
-    stringList list = {0};
-    string iter_str = s;
-    for (;;)
-    {
-        int32 idx = str_find_idx_first(s, delim);
-        if (idx == -1)
-        {
-
-        }
-        string split = 
-
-    }
-}
+// stringList str_split(Arena* arena, string chars, string delim)
+// {
+//     stringList list = {0};
+//     string iter_str = s;
+//     for (;;)
+//     {
+//         int32_t idx = str_find_idx_first(s, delim);
+//         if (idx == -1)
+//         {
+//
+//         }
+//         string split = 
+//
+//     }
+// }
 
 /*********************************************************************************/
 bool32 char_is_space(char c)
@@ -294,7 +294,7 @@ bool32 char_is_slash(char c)
 }
 
 /*********************************************************************************/
-// bool32 char_is_digit(char c, uint32 base)
+// bool32 char_is_digit(char c, uint32_t base)
 // {
 //     bool32 result = 0;
 //     if (0 < base && base <= 16)
@@ -325,7 +325,7 @@ char char_to_upper(char c)
 }
 
 /*********************************************************************************/
-uint64 cstr_length(char* c)
+uint64_t cstr_length(char* c)
 {
     size_t len = 0;
     if(c)
