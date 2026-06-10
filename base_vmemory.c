@@ -6,30 +6,30 @@
 #include <windows.h>
 
 /*********************************************************************************/
-static VirtualMemoryInfo VM_GetInfo(void)
+static VirtualMemoryInfo vm_get_info(void)
 {
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
 
     VirtualMemoryInfo info = {0};
-    info.page_size = (uint64)sysinfo.dwPageSize;
-    info.allocation_granularity = (uint64)sysinfo.dwAllocationGranularity;
+    info.page_size = (uint64_t)sysinfo.dwPageSize;
+    info.allocation_granularity = (uint64_t)sysinfo.dwAllocationGranularity;
     return info;
 }
 
 /*********************************************************************************/
-static void* VM_Reserve(uint64 size)
+static void* vm_reserve(uint64_t size)
 {
-    VirtualMemoryInfo info = VM_GetInfo();
+    VirtualMemoryInfo info = vm_get_info();
     size = ALIGN_UP_POW2(size, info.allocation_granularity);
     void* ptr = VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_NOACCESS);
     return ptr;
 }
 
 /*********************************************************************************/
-static bool32 VM_Commit(void* ptr, uint64 size)
+static bool32_t vm_commit(void* ptr, uint64_t size)
 {
-    VirtualMemoryInfo info = VM_GetInfo();
+    VirtualMemoryInfo info = vm_get_info();
     size = ALIGN_UP_POW2(size, info.page_size);
 
     void* result = VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
@@ -38,9 +38,9 @@ static bool32 VM_Commit(void* ptr, uint64 size)
 }
 
 /*********************************************************************************/
-static bool32 VM_Decommit(void* ptr, uint64 size)
+static bool32_t vm_decommit(void* ptr, uint64_t size)
 {
-    VirtualMemoryInfo info = VM_GetInfo();
+    VirtualMemoryInfo info = vm_get_info();
     size = ALIGN_UP_POW2(size, info.page_size);
  
     BOOL result = VirtualFree(ptr, size, MEM_DECOMMIT);
@@ -49,7 +49,7 @@ static bool32 VM_Decommit(void* ptr, uint64 size)
 }
 
 /*********************************************************************************/
-static void VM_Release(void* ptr, uint64 size)
+static void vm_release(void* ptr, uint64_t size)
 {
     (void)size;
     VirtualFree(ptr, 0, MEM_RELEASE);
@@ -62,9 +62,9 @@ static void VM_Release(void* ptr, uint64 size)
 #include <unistd.h>
 
 /*********************************************************************************/
-static VirtualMemoryInfo VM_GetInfo(void)
+static VirtualMemoryInfo vm_get_info(void)
 {
-    uint64 page_size = (uint64)sysconf(_SC_PAGESIZE);
+    uint64_t page_size = (uint64_t)sysconf(_SC_PAGESIZE);
     VirtualMemoryInfo info = {0};
     info.page_size = page_size;
     info.allocation_granularity = page_size;
@@ -73,9 +73,9 @@ static VirtualMemoryInfo VM_GetInfo(void)
 }
 
 /*********************************************************************************/
-static void* VM_Reserve(uint64 size)
+static void* vm_reserve(uint64_t size)
 {
-    VirtualMemoryInfo info = VM_GetInfo();
+    VirtualMemoryInfo info = vm_get_info();
     size = ALIGN_UP_POW2(size, info.allocation_granularity);
 
     void* ptr = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -87,9 +87,9 @@ static void* VM_Reserve(uint64 size)
 }
 
 /*********************************************************************************/
-static bool32 VM_Commit(void* ptr, uint64 size)
+static bool32 vm_commit(void* ptr, uint64_t size)
 {
-    VirtualMemoryInfo info = VM_GetInfo();
+    VirtualMemoryInfo info = vm_get_info();
     size = ALIGN_UP_POW2(size, info.page_size);
 
     int result = mprotect(ptr, size, PROT_READ | PROT_WRITE);
@@ -98,9 +98,9 @@ static bool32 VM_Commit(void* ptr, uint64 size)
 }
 
 /*********************************************************************************/
-static bool32 VM_Decommit(void* ptr, uint64 size)
+static bool32 vm_decommit(void* ptr, uint64_t size)
 {
-    VirtualMemoryInfo info = VM_GetInfo();
+    VirtualMemoryInfo info = vm_get_info();
 
     size = ALIGN_UP_POW2(size, info.page_size);
 
@@ -114,7 +114,7 @@ static bool32 VM_Decommit(void* ptr, uint64 size)
 }
 
 /*********************************************************************************/
-static void VM_Release(void* ptr, uint64 size)
+static void vm_release(void* ptr, uint64_t size)
 {
     munmap(ptr, size);
 }

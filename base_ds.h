@@ -125,13 +125,13 @@
 typedef struct ArrayHeader ArrayHeader;
 struct ArrayHeader
 {
-    uint64 len;
-    uint64 capacity;
+    uint64_t len;
+    uint64_t capacity;
 };
 
-void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64 item_size, uint64 count);
-void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx);
-void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx);
+void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64_t item_size, uint64_t count);
+void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
+void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
 
 #define ARRAY_HEADER_CAST(a) (&(a).header)
 #define ARRAY_ITEM_SIZE(a) (sizeof(*(a).items))
@@ -155,10 +155,10 @@ void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint6
 
 #define ARRAY_INSERT(arena, a, i, item)                                                                          \
     do {                                                                                                         \
-        if ((uint64)(i) <= (a).header.len)                                                                       \
+        if ((uint64_t)(i) <= (a).header.len)                                                                     \
         {                                                                                                        \
             *((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1); \
-            array_shift_up(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i));                          \
+            array_shift_up(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i));                            \
             (a).items[(i)] = (item);                                                                             \
             (a).header.len++;                                                                                    \
         }                                                                                                        \
@@ -167,7 +167,7 @@ void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint6
 
 #define ARRAY_REMOVE(a, i)                                                                  \
     do {                                                                                    \
-        if ((uint64)(i) < (a).header.len)                                                   \
+        if ((uint64_t)(i) < (a).header.len)                                                 \
         {                                                                                   \
             array_shift_down(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i) + 1); \
             (a).header.len--;                                                               \
@@ -177,7 +177,7 @@ void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint6
 
 #define ARRAY_REMOVE_SWAP(a, i)                                \
     do {                                                       \
-        if ((uint64)(i) < (a).header.len)                      \
+        if ((uint64_t)(i) < (a).header.len)                    \
             (a).items[(i)] = (a).items[--(a).header.len];      \
     } while (0)
 
@@ -189,19 +189,19 @@ void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint6
 typedef struct HashMapEntry HashMapEntry;
 struct HashMapEntry 
 {
-    uint64 hash;
-    uint64 idx;
+    uint64_t hash;
+    uint64_t idx;
 };
 
 typedef struct HashMapHeader HashMapHeader;
 struct HashMapHeader
 {
-    uint64 len;
-    uint64 capacity;
-    uint64 insertIndex;
-    uint64 usedCountThreshold;
-    uint64 deletedCount;
-    uint64 deletedCountThreshold;
+    uint64_t len;
+    uint64_t capacity;
+    uint64_t insertIndex;
+    uint64_t usedCountThreshold;
+    uint64_t deletedCount;
+    uint64_t deletedCountThreshold;
     HashMapEntry* table;
 };
 

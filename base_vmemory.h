@@ -6,15 +6,15 @@
 
 typedef struct
 {
-    uint64 page_size;
-    uint64 allocation_granularity;
+    uint64_t page_size;
+    uint64_t allocation_granularity;
 
 } VirtualMemoryInfo;
 
-static VirtualMemoryInfo VM_GetInfo(void);
-static void*  VM_Reserve(uint64 size);
-static bool32 VM_Commit(void* ptr, uint64 size);
-static bool32 VM_Decommit(void* ptr, uint64 size);
-static void   VM_Release(void* ptr, uint64 size);
+static VirtualMemoryInfo vm_get_info(void);
+static void*    vm_reserve(uint64_t size);
+static bool32_t vm_commit(void* ptr, uint64_t size);
+static bool32_t vm_decommit(void* ptr, uint64_t size);
+static void     vm_release(void* ptr, uint64_t size);
 
 #endif // BASE_VIRTUAL_MEMORY_H

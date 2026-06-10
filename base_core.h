@@ -7,7 +7,6 @@
 #define BASE_CORE_H
 
 #include <stdint.h>
-#include <stddef.h>
 #include <string.h>
 
 
@@ -15,34 +14,26 @@
 // Base Types
 //**************************
 
-// typedef uint8_t  uint8_t;  // U8
-// typedef uint16_t uint16; // U16
-// typedef uint32_t uint32; // U32
-// typedef uint64_t uint64; // U64
-// typedef int8_t   int8;   // S8
-// typedef int16_t  int16;  // S16
-// typedef int32_t  int32;  // S32
-// typedef int64_t  int64;  // S64
-// typedef int8     bool8;  // B8
-// typedef int16    bool16; // B16
-// typedef int32    bool32; // B32
-// typedef int64    bool64; // B64
-// typedef float    real32; // F32
-// typedef double   real64; // F64
+typedef int8_t     bool8_t;
+typedef int16_t    bool16_t;
+typedef int32_t    bool32_t;
+typedef int64_t    bool64_t;
 
+typedef float      float32_t;
+typedef double     float64_t;
 
 //**************************
 // Units
 //**************************
 
-#define KB(n)  (((size_t)(n)) << 10)
-#define MB(n)  (((size_t)(n)) << 20)
-#define GB(n)  (((size_t)(n)) << 30)
-#define TB(n)  (((size_t)(n)) << 40)
+#define KB(n)  (((uint64_t)(n)) << 10)
+#define MB(n)  (((uint64_t)(n)) << 20)
+#define GB(n)  (((uint64_t)(n)) << 30)
+#define TB(n)  (((uint64_t)(n)) << 40)
 
-#define THOUSAND(n)   ((n)*1000)
-#define MILLION(n)    ((n)*1000000)
-#define BILLION(n)    ((n)*1000000000)
+#define THOUSAND(n) ((n)*1000)
+#define MILLION(n)  ((n)*1000000)
+#define BILLION(n)  ((n)*1000000000)
 
 
 //**************************

@@ -18,7 +18,7 @@ static void test_stack_push_pop(void)
 
     for (int i = 0; i < 10; i++)
     {
-        Node* nodep = arena_push_struct(arena, Node);
+        Node* nodep = ARENA_PUSH_STRUCT(arena, Node);
         nodep->value = i;
         STACK_PUSH(first, nodep);
         TEST_ASSERT(first->value == i);
@@ -43,7 +43,7 @@ static void test_queue_push_pop(void)
 
     for (int i = 0; i < 10; i++)
     {
-        Node* nodep = arena_push_struct(arena, Node);
+        Node* nodep = ARENA_PUSH_STRUCT(arena, Node);
         nodep->value = i;
         QUEUE_PUSH(first, last, nodep);
         TEST_ASSERT(first->value == 0);
@@ -78,7 +78,7 @@ static void test_doubly_linked_list(void)
 
     for (int i = 0; i < 10; i++)
     {
-        DLLNode* node = arena_push_struct(arena, DLLNode);
+        DLLNode* node = ARENA_PUSH_STRUCT(arena, DLLNode);
         node->value = i;
         DLL_PUSH_BACK(first, last, node);
         TEST_ASSERT(last->value == i);
@@ -108,7 +108,7 @@ static void test_doubly_linked_list(void)
 
     for (int i = 10; i < 20; i++)
     {
-        DLLNode* node = arena_push_struct(arena, DLLNode);
+        DLLNode* node = ARENA_PUSH_STRUCT(arena, DLLNode);
         node->value = i;
         DLL_PUSH_FRONT(first, last, node);
         TEST_ASSERT(first->value == i);
