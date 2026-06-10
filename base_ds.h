@@ -15,15 +15,15 @@
 //  // Example Stack
 //  Node* first;
 
-#define stack_pushn(first, node, next) \
+#define STACK_PUSH_N(first, node, next) \
     ((node)->next = (first), (first) = (node))
 
-#define stack_popn(first, next) \
+#define STACK_POP_N(first, next) \
     ((first) = (first)->next)
 
-#define stack_push(first, node) stack_pushn(first, node, next)
+#define STACK_PUSH(first, node) STACK_PUSH_N(first, node, next)
 
-#define stack_pop(first) stack_popn(first, next)
+#define STACK_POP(first) STACK_POP_N(first, next)
 
 //************************
 // Queue
@@ -39,18 +39,18 @@
 //  Node* first;
 //  Node* last;
 
-#define queue_push_n(first, last, node, next)                       \
+#define QUEUE_PUSH_N(first, last, node, next)                       \
     ((first) == NULL ?                                              \
     ((first) = (last) = (node), (node)->next = NULL) :              \
     ((last)->next = (node), (last) = (node), (node)->next = NULL))
 
-#define queue_pop_n(first, last, next)                              \
+#define QUEUE_POP_N(first, last, next)                              \
     ((first) == (last) ?                                            \
     (first) = (last) = NULL :                                       \
     ((first) = (first)->next))
 
-#define queue_push(first, last, node) queue_push_n(first, last, node, next)
-#define queue_pop(first, last) queue_pop_n(first, last, next) 
+#define QUEUE_PUSH(first, last, node) QUEUE_PUSH_N(first, last, node, next)
+#define QUEUE_POP(first, last) QUEUE_POP_N(first, last, next) 
 
 
 //************************
@@ -67,44 +67,44 @@
 // Node* first = {0};
 // Node* last  = {0};
 
-#define dll_push_back_np(first, last, node, next, prev)                                   \
+#define DLL_PUSH_BACK_NP(first, last, node, next, prev)                                   \
     ((first) == NULL ?                                                                    \
     ((first) = (last) = (node), (node)->next = (node)->prev = NULL) :                     \
     ((last)->next = (node), (node)->prev = (last), (last) = (node), (node)->next = NULL))
 
-#define dll_push_front_np(first, last, node, next, prev) \
-    dll_push_back_np(last, first, node, prev, next)
+#define DLL_PUSH_FRONT_NP(first, last, node, next, prev) \
+    DLL_PUSH_BACK_NP(last, first, node, prev, next)
 
-#define dll_insert_after_np(first, last, ref_node, node, next, prev)   \
+#define DLL_INSERT_AFTER_NP(first, last, ref_node, node, next, prev)   \
     (((last) == (ref_node)) ?                                          \
-    dll_push_back_np(first, last, node, next, prev) :                  \
+    DLL_PUSH_BACK_NP(first, last, node, next, prev) :                  \
     ((node)->prev = (ref_node), (node)->next = (ref_node)->next, (ref_node)->next->prev = (node), (ref_node)->next = (node)))
 
-#define dll_insert_before_np(first, last, ref_node, node, next, prev) \
-    dll_insert_after_np(last, first, ref_node, node, prev, next)
+#define DLL_INSERT_BEFORE_NP(first, last, ref_node, node, next, prev) \
+    DLL_INSERT_AFTER_NP(last, first, ref_node, node, prev, next)
 
-#define dll_remove_first_np(first, last, next, prev)    \
+#define DLL_REMOVE_FIRST_NP(first, last, next, prev)    \
     (((first) == (last)) ?                              \
     (first) = (last) = NULL :                           \
     ((first) = (first)->next, (first)->prev = NULL))
 
-#define dll_remove_last_np(first, last, next, prev) \
-    dll_remove_first_np(last, first, prev, next)
+#define DLL_REMOVE_LAST_NP(first, last, next, prev) \
+    DLL_REMOVE_FIRST_NP(last, first, prev, next)
 
-#define dll_remove_np(first, last, node, next, prev)                           \
+#define DLL_REMOVE_NP(first, last, node, next, prev)                           \
     (((first) == (node)) ?                                                     \
-    dll_remove_first_np(first, last, next, prev) :                             \
+    DLL_REMOVE_FIRST_NP(first, last, next, prev) :                             \
     ((last) == (node)) ?                                                       \
-    dll_remove_last_np(first, last, next, prev) :                              \
+    DLL_REMOVE_LAST_NP(first, last, next, prev) :                              \
     ((node)->next->prev = (node)->prev, (node)->prev->next = (node)->next))
 
-#define dll_push_back(first, last, node)                dll_push_back_np(first, last, node, next, prev)
-#define dll_push_front(first, last, node)               dll_push_front_np(first, last, node, next, prev)
-#define dll_insert_after(first, last, ref_node, node)   dll_insert_after_np(first, last, ref_node, node, next, prev)
-#define dll_insert_before(first, last, ref_node, node)  dll_insert_before_np(first, last, ref_node, node, next, prev)
-#define dll_remove(first, last, node)                   dll_remove_np(first, last, node, next, prev)
-#define dll_remove_first(first, last)                   dll_remove_first_np(first, last, next, prev)
-#define dll_remove_last(first, last)                    dll_remove_last_np(first, last, next, prev)
+#define DLL_PUSH_BACK(first, last, node)                DLL_PUSH_BACK_NP(first, last, node, next, prev)
+#define DLL_PUSH_FRONT(first, last, node)               DLL_PUSH_FRONT_NP(first, last, node, next, prev)
+#define DLL_INSERT_AFTER(first, last, ref_node, node)   DLL_INSERT_AFTER_NP(first, last, ref_node, node, next, prev)
+#define DLL_INSERT_BEFORE(first, last, ref_node, node)  DLL_INSERT_BEFORE_NP(first, last, ref_node, node, next, prev)
+#define DLL_REMOVE(first, last, node)                   DLL_REMOVE_NP(first, last, node, next, prev)
+#define DLL_REMOVE_FIRST(first, last)                   DLL_REMOVE_FIRST_NP(first, last, next, prev)
+#define DLL_REMOVE_LAST(first, last)                    DLL_REMOVE_LAST_NP(first, last, next, prev)
 
 
 //************************
@@ -118,8 +118,8 @@
 //  };
 // 
 //  FloatArray floats = {0};
-//  arr_reserve(arena, floats, 128);   // reserve space for 128 items
-//  arr_push(arena, floats, 3.1415f);  // push to back
+//  ARRAY_RESERVE(arena, floats, 128);   // reserve space for 128 items
+//  ARRAY_PUSH(arena, floats, 3.1415f);  // push to back
 //  ...
 
 typedef struct ArrayHeader ArrayHeader;
@@ -129,67 +129,57 @@ struct ArrayHeader
     uint64 capacity;
 };
 
-void* arr_grow(Arena* arena, ArrayHeader* header, void* items, uint64 item_size, uint64 count);
-void  arr_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx);
-void  arr_shift_up(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx);
+void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64 item_size, uint64 count);
+void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx);
+void  array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx);
 
+#define ARRAY_HEADER_CAST(a) (&(a).header)
+#define ARRAY_ITEM_SIZE(a) (sizeof(*(a).items))
+#define ARRAY_LEN(a) (a.header.len)
+#define ARRAY_CAP(a) (a.header.capacity)
 
-#define arr_header_cast(a) (&(a).header)
-#define arr_item_size(a) (sizeof(*(a).items))
-#define arr_len(a) (a.header.len)
-#define arr_cap(a) (a.header.capacity)
-
-#define arr_push(arena, a, item)                                                                      \
-    (*((void**)&(a).items) = arr_grow((arena), arr_header_cast(a), (a).items, arr_item_size(a), 1),   \
+#define ARRAY_PUSH(arena, a, item)                                                                         \
+    (*((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1),  \
     (a).items[(a).header.len++] = (item))
 
-#define arr_add(arena, a, n)                                                                          \
-    (*((void**)&(a).items) = arr_grow((arena), arr_header_cast(a), (a).items, arr_item_size(a), (n)), \
-    (a).header.len += (n),                                                                            \
+#define ARRAY_ADD(arena, a, n)                                                                              \
+    (*((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (n)), \
+    (a).header.len += (n),                                                                                  \
     &(a).items[(a).header.len - (n)])
 
-#define arr_reserve(arena, a, n) \
-    (*((void**)&(a).items) = arr_grow((arena), arr_header_cast(a), (a).items, arr_item_size(a), (n)))
+#define ARRAY_RESERVE(arena, a, n) \
+    (*((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (n)))
 
-#define arr_clear(a) ((a).header.len = 0)
-#define arr_clear_zero(a) (memset((a).items, 0, arr_item_size(a)*arr_len(a)), (a).header.len = 0)
+#define ARRAY_CLEAR(a) ((a).header.len = 0)
+#define ARRAY_CLEAR_ZERO(a) (memset((a).items, 0, ARRAY_ITEM_SIZE(a)*ARRAY_LEN(a)), (a).header.len = 0)
 
-#define arr_insert(arena, a, i, item)                                                 \
-    do {                                                                              \
-        if ((uint64)(i) <= (a).header.len)                                            \
-        {                                                                             \
-            *((void**)&(a).items) = arr_grow((arena), arr_header_cast(a), (a).items, arr_item_size(a), 1); \
-            arr_shift_up(arr_header_cast(a), (a).items, arr_item_size(a), (i));       \
-            (a).items[(i)] = (item);                                                  \
-            (a).header.len++;                                                         \
-        }                                                                             \
+#define ARRAY_INSERT(arena, a, i, item)                                                                          \
+    do {                                                                                                         \
+        if ((uint64)(i) <= (a).header.len)                                                                       \
+        {                                                                                                        \
+            *((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1); \
+            array_shift_up(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i));                          \
+            (a).items[(i)] = (item);                                                                             \
+            (a).header.len++;                                                                                    \
+        }                                                                                                        \
     } while (0)
 
 
-#define arr_remove(a, i)                                                              \
-    do {                                                                              \
-        if ((uint64)(i) < (a).header.len)                                             \
-        {                                                                             \
-            arr_shift_down(arr_header_cast(a), (a).items, arr_item_size(a), (i) + 1); \
-            (a).header.len--;                                                         \
-        }                                                                             \
+#define ARRAY_REMOVE(a, i)                                                                  \
+    do {                                                                                    \
+        if ((uint64)(i) < (a).header.len)                                                   \
+        {                                                                                   \
+            array_shift_down(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i) + 1); \
+            (a).header.len--;                                                               \
+        }                                                                                   \
     } while (0)
 
 
-#define arr_remove_swap(a, i)                                  \
+#define ARRAY_REMOVE_SWAP(a, i)                                \
     do {                                                       \
         if ((uint64)(i) < (a).header.len)                      \
             (a).items[(i)] = (a).items[--(a).header.len];      \
     } while (0)
-
-
-// #define arr_sort(a, cmp_func) (qsort((a).items, arr_len(a), arr_item_size(a), cmp_func))
-
-
-#define stbds_arrmaybegrow(a,n)  ((!(a) || stbds_header(a)->length + (n) > stbds_header(a)->capacity) \
-                                  ? (stbds_arrgrow(a,n,0),0) : 0)
-
-#define stbds_arrgrow(a,b,c)   ((a) = stbds_arrgrowf_wrapper((a), sizeof *(a), (b), (c)))
 
 
 //************************
@@ -215,38 +205,38 @@ struct HashMapHeader
     HashMapEntry* table;
 };
 
-// #define hmap_reserve(arena, m, n)
-// #define hmap_default(arena, m, val)
-// #define hmap_defaults(arena, m, s)
-// #define hmap_clear(m)
-// #define hmap_clone(m)
+// #define HMAP_RESERVE(arena, m, n)
+// #define HMAP_DEFAULT(arena, m, val)
+// #define HMAP_DEFAULTS(arena, m, s)
+// #define HMAP_CLEAR(m)
+// #define HMAP_CLONE(m)
 
-// #define hmap_put(arena, m, k, val)
-// #define hmap_index(arena, m, k)
-// #define hmap_get(m, type, k)
-// #define hmap_try_get(m, k, out_val)
-// #define hmap_gets(m, type, k)
-// #define hmap_get_ptr(m, k)
-// #define hmap_get_ptr_null(m, k)
-// #define hmap_del(scratch, m, k)
+// #define HMAP_PUT(arena, m, k, val)
+// #define HMAP_INDEX(arena, m, k)
+// #define HMAP_GET(m, type, k)
+// #define HMAP_TRY_GET(m, k, out_val)
+// #define HMAP_GETS(m, type, k)
+// #define HMAP_GET_PTR(m, k)
+// #define HMAP_GET_PTR_NULL(m, k)
+// #define HMAP_DEL(scratch, m, k)
 
 
 //************************
 // String Hash Map
 //************************
 
-// #define smap_reserve(arena, m, n)
-// #define smap_default(arena, m, val)
-// #define smap_defaults(arena, m, s)
-// #define smap_clear(m)
-// #define smap_clone(m)
+// #define SMAP_RESERVE(arena, m, n)
+// #define SMAP_DEFAULT(arena, m, val)
+// #define SMAP_DEFAULTS(arena, m, s)
+// #define SMAP_CLEAR(m)
+// #define SMAP_CLONE(m)
 
-// #define smap_put(arena, m, k, val)
-// #define smap_index(arena, m, k)
-// #define smap_get(m, type, k)
-// #define smap_try_get(m, k, out_val)
-// #define smap_gets(m, type, k)
-// #define smap_get_ptr(m, k)
-// #define smap_get_ptr_null(m, k)
-// #define smap_del(scratch, m, k)
+// #define SMAP_PUT(arena, m, k, val)
+// #define SMAP_INDEX(arena, m, k)
+// #define SMAP_GET(m, type, k)
+// #define SMAP_TRY_GET(m, k, out_val)
+// #define SMAP_GETS(m, type, k)
+// #define SMAP_GET_PTR(m, k)
+// #define SMAP_GET_PTR_NULL(m, k)
+// #define SMAP_DEL(scratch, m, k)
 

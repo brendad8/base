@@ -5,7 +5,7 @@
 #include "base_arena.h"
 
 /*********************************************************************************/
-void* arr_grow(Arena* arena, ArrayHeader* header, 
+void* array_grow(Arena* arena, ArrayHeader* header, 
                 void* items, uint64 item_size, uint64 count)
 {
     void* new_ptr;
@@ -73,7 +73,7 @@ void* arr_grow(Arena* arena, ArrayHeader* header,
 }
 
 /*********************************************************************************/
-void arr_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx)
+void array_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx)
 {
     uint8* src = (uint8*)items + from_idx * item_size;
     uint8* dst = src - item_size;
@@ -82,7 +82,7 @@ void arr_shift_down(ArrayHeader* header, void* items, uint64 item_size, uint64 f
 }
 
 /*********************************************************************************/
-void arr_shift_up(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx)
+void array_shift_up(ArrayHeader* header, void* items, uint64 item_size, uint64 from_idx)
 {
     uint8* src = (uint8*)items + from_idx * item_size;
     uint8* dst = src + item_size;
