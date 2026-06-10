@@ -24,7 +24,7 @@ static void test_arena_push(void)
     TEST_ASSERT(arena->committed == KB(8));
 }
 
-static bool32_t is_aligned(void* ptr, uint64_t align)
+static bool32 is_aligned(void* ptr, uint64_t align)
 {
     return (((uintptr_t)ptr) & (align - 1)) == 0;
 }
@@ -169,7 +169,7 @@ static void test_arena_stress(void)
 
 static void test_arena_out_of_memory(void)
 {
-    bool32_t success = 1;
+    bool32 success = 1;
     Arena* arena = arena_alloc((ArenaParams){KB(4), KB(4)});
     char* ptr = arena_push(arena, GB(1));
     TEST_ASSERT(ptr == NULL);

@@ -22,10 +22,10 @@ typedef struct Arena Arena;
 struct Arena
 {
     Arena* next;           // next arena if growable
-    uint8_t* base;           // arena base position
-    uint64_t pos;            // arena alloc position
-    uint64_t committed;      // total memory committed
-    uint64_t reserved;       // total memory reserved
+    uint8_t* base;         // arena base position
+    uint64_t pos;          // arena alloc position
+    uint64_t committed;    // total memory committed
+    uint64_t reserved;     // total memory reserved
     ArenaParams params;    // configurable options for arena
 };
 

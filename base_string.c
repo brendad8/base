@@ -1,8 +1,11 @@
 
 #include "base_string.h"
 #include "base_arena.h"
+#include "base_ds.h"
+
 #include <stdarg.h>
 #include <stdio.h>
+
 
 /*********************************************************************************/
 string str_new(char* ptr, uint64_t len) 
@@ -81,7 +84,7 @@ bool32 str_contains(string s, string pattern)
 }
 
 /*********************************************************************************/
-string str_slice_idx(string s, uint64_t start, uint64_t end)
+string str_slice(string s, uint64_t start, uint64_t end)
 {
     end = MIN(end, s.len);
     start = MIN(start, end);
@@ -95,6 +98,7 @@ string str_slice_len(string s, uint64_t start, uint64_t length)
     length = CLAMP_TOP(s.len - start, length);
     return str_new(s.ptr + start, length);
 }
+
 
 /*********************************************************************************/
 bool32 str_starts_with(string s, string prefix) 
@@ -232,36 +236,69 @@ string str_to_upper(Arena* arena, string s)
 }
 
 /*********************************************************************************/
-// stringList str_split(Arena* arena, string s, string delim)
-// {
-//     stringList list = {0};
-//     string iter_str = s;
-//     for (;;)
-//     {
-//         int32_t idx = str_find_idx_first(s, delim);
-//         if (idx == -1)
-//         {
-//
-//         }
-//         string split = 
-//     }
-// }
+stringList str_split(Arena* arena, string s, string delim)
+{
+    string current_split = {0};
+    stringList str_list  = {0};
 
-// stringList str_split(Arena* arena, string chars, string delim)
-// {
-//     stringList list = {0};
-//     string iter_str = s;
-//     for (;;)
-//     {
-//         int32_t idx = str_find_idx_first(s, delim);
-//         if (idx == -1)
-//         {
-//
-//         }
-//         string split = 
-//
-//     }
-// }
+    while (s.len > 0)
+    {
+        int32_t idx = str_find_idx_first(s, delim);
+        if (idx != -1)
+        {
+            current_split = str_slice(s, 0, idx);
+            s = str_slice(s, idx + delim.len, s.len);
+        }
+        else
+        {
+            current_split = s;
+            s.len = 0;
+        }
+
+        stringNode* node = ARENA_PUSH_STRUCT(arena, stringNode);
+        node->s = str_copy(arena, current_split);
+
+        printf("current_split = %s\n", node->s.ptr);
+
+        QUEUE_PUSH(str_list.first, str_list.last, node);
+        str_list.node_count++;
+    }
+
+    return str_list;
+}
+
+/*********************************************************************************/
+stringList str_split_skip_empty(Arena* arena, string s, string delim)
+{
+    string current_split = {0};
+    stringList str_list  = {0};
+
+    while (s.len > 0)
+    {
+        int32_t idx = str_find_idx_first(s, delim);
+        if (idx != 0)
+        {
+            current_split = str_slice(s, 0, idx);
+            s = str_slice(s, idx + delim.len, s.len);
+        }
+        else
+        {
+            current_split = s;
+            s.len = 0;
+        }
+
+        // skip over empty splits
+        if (idx == 0) continue;
+
+        stringNode* node = ARENA_PUSH_STRUCT(arena, stringNode);
+        node->s = str_copy(arena, current_split);
+
+        QUEUE_PUSH(str_list.first, str_list.last, node);
+        str_list.node_count++;
+    }
+    return str_list;
+}
+
 
 /*********************************************************************************/
 bool32 char_is_space(char c)

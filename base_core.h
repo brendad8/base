@@ -72,7 +72,6 @@ typedef double     float64;
 #define EXTRACT16(word, pos)   (((word) >> ((pos)*16)) & max_uint16)
 #define EXTRACT32(word, pos)   (((word) >> ((pos)*32)) & max_uint32)
 
-
 //**************************
 // Compiler macros 
 //**************************

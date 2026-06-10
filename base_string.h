@@ -17,7 +17,7 @@ struct string
 typedef struct stringNode stringNode;
 struct stringNode 
 {
-    stringNode *next;
+    stringNode* next;
     string s;
 };
 
@@ -27,16 +27,16 @@ struct stringList
     stringNode* first;
     stringNode* last;
     uint64_t node_count;
-    uint64_t total_size;
+    // uint64_t total_size;
 };
 
-typedef struct stringArray stringArray;
-struct stringArray
-{
-    string* v;
-    uint64_t len;
-    uint64_t capacity;
-};
+// typedef struct stringArray stringArray;
+// struct stringArray
+// {
+//     string* v;
+//     uint64_t len;
+//     uint64_t capacity;
+// };
 
 #define str_lit(s)  str_new((char*)(s), sizeof(s) - 1)
 #define str_varg(s) (int)((s).len), ((s).ptr)
@@ -53,7 +53,7 @@ bool32  str_ends_with(string s, string suffix);
 int32_t str_find_idx_first(string s, string pattern);
 int32_t str_find_idx_last(string s, string pattern);
 
-string str_slice_idx(string s, uint64_t start, uint64_t end);
+string str_slice(string s, uint64_t start, uint64_t end);
 string str_slice_len(string s, uint64_t start, uint64_t length);
 
 string str_remove_prefix(string s, string prefix);
@@ -73,6 +73,7 @@ string str_to_upper(Arena *arena, string string);
 string str_to_lower(Arena *arena, string string);
 
 stringList str_split(Arena *arena, string s, string delim);
+stringList str_split_skip_empty(Arena *arena, string s, string delim);
 
 bool32 char_is_space(char c);
 bool32 char_is_upper(char c);
