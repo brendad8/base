@@ -27,7 +27,7 @@ static void* vm_reserve(uint64_t size)
 }
 
 /*********************************************************************************/
-static bool32_t vm_commit(void* ptr, uint64_t size)
+static bool32 vm_commit(void* ptr, uint64_t size)
 {
     VirtualMemoryInfo info = vm_get_info();
     size = ALIGN_UP_POW2(size, info.page_size);
@@ -38,7 +38,7 @@ static bool32_t vm_commit(void* ptr, uint64_t size)
 }
 
 /*********************************************************************************/
-static bool32_t vm_decommit(void* ptr, uint64_t size)
+static bool32 vm_decommit(void* ptr, uint64_t size)
 {
     VirtualMemoryInfo info = vm_get_info();
     size = ALIGN_UP_POW2(size, info.page_size);

@@ -50,7 +50,7 @@ void arena_release(Arena* arena)
 // }
 
 /*********************************************************************************/
-static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool32_t zero)
+static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool32 zero)
 {
     uint64_t new_pos = ALIGN_UP_POW2(arena->pos, align);
     uint64_t new_pos_end = new_pos + size;

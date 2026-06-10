@@ -14,13 +14,13 @@
 // Base Types
 //**************************
 
-typedef int8_t     bool8_t;
-typedef int16_t    bool16_t;
-typedef int32_t    bool32_t;
-typedef int64_t    bool64_t;
+typedef int8_t     bool8;
+typedef int16_t    bool16;
+typedef int32_t    bool32;
+typedef int64_t    bool64;
 
-typedef float      float32_t;
-typedef double     float64_t;
+typedef float      float32;
+typedef double     float64;
 
 //**************************
 // Units
