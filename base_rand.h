@@ -25,14 +25,14 @@
 
 #include "base_core.h"
 
-void   rand_seed(uint64 initstate, uint64 initseq);
-uint32 rand_int(void);
-float  rand_unif(void);
-float  rand_norm(float mu, float sigma);
-float  rand_exp(float lambda);
-uint32 rand_pois(float mu);
-bool32 rand_bern(float p);
-uint32 rand_binom(uint32 n, float p);
+void     rand_seed(uint64_t initstate, uint64_t initseq);
+uint32_t rand_int(void);
+float    rand_unif(void);
+float    rand_norm(float mu, float sigma);
+float    rand_exp(float lambda);
+uint32_t rand_pois(float mu);
+bool32   rand_bern(float p);
+uint32_t rand_binom(uint32_t n, float p);
 
 #endif
 

@@ -16,8 +16,8 @@
 
 typedef struct 
 {
-    uint64 state;         
-    uint64 inc;
+    uint64_t state;         
+    uint64_t inc;
     float prev_norm;
 
 } prng_state;
@@ -27,16 +27,16 @@ static prng_state s_prng_state = {
 };
 
 /********************************************************************************/
-static uint32 prng_rand_r(prng_state* rng)
+static uint32_t prng_rand_r(prng_state* rng)
 {
-    uint64 oldstate = rng->state;
+    uint64_t oldstate = rng->state;
     rng->state = oldstate * 6364136223846793005ull + rng->inc;
-    uint32 xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
-    uint32 rot = oldstate >> 59u;
+    uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
+    uint32_t rot = oldstate >> 59u;
     return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
-uint32 rand_int(void)
+uint32_t rand_int(void)
 {
     return prng_rand_r(&s_prng_state);
 }
@@ -110,7 +110,7 @@ float rand_exp(float lambda)
 }
 
 /********************************************************************************/
-static uint32 prng_rpois_r(prng_state* rng, float mu)
+static uint32_t prng_rpois_r(prng_state* rng, float mu)
 {
     uint32_t k = 0;
     float t = 0.0f;
@@ -122,7 +122,7 @@ static uint32 prng_rpois_r(prng_state* rng, float mu)
     return k;
 }
 
-uint32 rand_pois(float mu)
+uint32_t rand_pois(float mu)
 {
     return prng_rpois_r(&s_prng_state, mu);
 }
@@ -141,7 +141,7 @@ bool32 rand_bern(float p)
 
 
 /********************************************************************************/
-static uint32 prng_rbinom_r(prng_state* rng, uint32 n, float p)
+static uint32_t prng_rbinom_r(prng_state* rng, uint32_t n, float p)
 {
     uint32_t x = 0;
     for (int i = 0; i < n; i++)
@@ -150,7 +150,7 @@ static uint32 prng_rbinom_r(prng_state* rng, uint32 n, float p)
     return x;
 }
 
-uint32 rand_binom(uint32 n, float p)
+uint32_t rand_binom(uint32_t n, float p)
 {
     return prng_rbinom_r(&s_prng_state, n, p);
 }
