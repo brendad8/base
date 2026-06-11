@@ -77,10 +77,10 @@ void test_string_split(void)
 {
     Arena* arena = arena_alloc((ArenaParams){0});
     string to_split = STR_LIT(",hi,mom,,");
-    stringList splits = str_split(arena, to_split, STR_LIT(","));
+    StringList splits = str_split(arena, to_split, STR_LIT(","));
     TEST_ASSERT(splits.node_count == 5);
 
-    stringNode* node = splits.first;
+    StringNode* node = splits.first;
     TEST_ASSERT(str_equal(node->s, str_new("\0", 0)));
     node = node->next;
     TEST_ASSERT(str_equal(node->s, STR_LIT("hi")));
@@ -98,9 +98,9 @@ void test_string_split_skip_empty(void)
 {
     Arena* arena = arena_alloc((ArenaParams){0});
     string to_split = STR_LIT(",hi,mom,,");
-    stringList splits = str_split_skip_empty(arena, to_split, STR_LIT(","));
+    StringList splits = str_split_skip_empty(arena, to_split, STR_LIT(","));
     TEST_ASSERT(splits.node_count == 2);
-    stringNode* node = splits.first;
+    StringNode* node = splits.first;
     TEST_ASSERT(str_equal(node->s, STR_LIT("hi")));
     node = node->next;
     TEST_ASSERT(str_equal(node->s, STR_LIT("mom")));

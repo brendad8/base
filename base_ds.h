@@ -106,7 +106,6 @@
 #define DLL_REMOVE_FIRST(first, last)                   DLL_REMOVE_FIRST_NP(first, last, next, prev)
 #define DLL_REMOVE_LAST(first, last)                    DLL_REMOVE_LAST_NP(first, last, next, prev)
 
-
 //************************
 // Dynamic Array
 //************************
@@ -130,8 +129,8 @@ struct ArrayHeader
 };
 
 void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64_t item_size, uint64_t count);
-void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
-void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
+// void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
+// void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
 
 #define ARRAY_HEADER_CAST(a) (&(a).header)
 #define ARRAY_ITEM_SIZE(a) (sizeof(*(a).items))
@@ -153,33 +152,57 @@ void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uin
 #define ARRAY_CLEAR(a) ((a).header.len = 0)
 #define ARRAY_CLEAR_ZERO(a) (memset((a).items, 0, ARRAY_ITEM_SIZE(a)*ARRAY_LEN(a)), (a).header.len = 0)
 
-#define ARRAY_INSERT(arena, a, i, item)                                                                          \
-    do {                                                                                                         \
-        if ((uint64_t)(i) <= (a).header.len)                                                                     \
-        {                                                                                                        \
-            *((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1); \
-            array_shift_up(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i));                            \
-            (a).items[(i)] = (item);                                                                             \
-            (a).header.len++;                                                                                    \
-        }                                                                                                        \
-    } while (0)
+#define ARRAY_INSERT_N(arena, a, i, n)                                                \
+    (ARRAY_ADD(arena, a, n),                                                          \
+    memmove(&(a).items[(i)+(n)], &(a).items[i], sizeof(*(a).items) * ((a).header.len - (n) - (i))))
+
+#define ARRAY_INSERT(arena, a, i, item)   \
+    (ARRAY_INSERT_N(arena, a, i, 1),      \
+    (a).items[i] = item) 
+
+// #define ARRAY_INSERT(arena, a, i, item)                                                                          \
+//     do {                                                                                                         \
+//         if ((uint64_t)(i) <= (a).header.len)                                                                     \
+//         {                                                                                                        \
+//             *((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1); \
+//             array_shift_up(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i));                            \
+//             (a).items[(i)] = (item);                                                                             \
+//             (a).header.len++;                                                                                    \
+//         }                                                                                                        \
+//     } while (0)
+
+#define ARRAY_REMOVE(a, i) \
+    ARRAY_REMOVE_N((a), (i), 1)
+
+#define ARRAY_REMOVE_N(a, i, n)                                                                        \
+    do {                                                                                               \
+        if ((i) + (n) < (a).header.len) {                                                              \
+            memmove(&(a).items[i], &(a).items[(i)+(n)], sizeof(*(a).items)*((a).header.len-(n)-(i)));  \
+            (a).header.len -= (n);                                                                     \
+        }                                                                                              \
+    } while(0)
+
+#define ARRAY_REMOVE_SWAP(a,i)                          \
+    do {                                                \
+        if ((i) < (a).header.len)                       \
+            (a).items[i] = (a).items[--(a).header.len]; \
+    } while(0)
+
+// #define ARRAY_REMOVE(a, i)                                                                  \
+//     do {                                                                                    \
+//         if ((uint64_t)(i) < (a).header.len)                                                 \
+//         {                                                                                   \
+//             array_shift_down(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i) + 1); \
+//             (a).header.len--;                                                               \
+//         }                                                                                   \
+//     } while (0)
 
 
-#define ARRAY_REMOVE(a, i)                                                                  \
-    do {                                                                                    \
-        if ((uint64_t)(i) < (a).header.len)                                                 \
-        {                                                                                   \
-            array_shift_down(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i) + 1); \
-            (a).header.len--;                                                               \
-        }                                                                                   \
-    } while (0)
-
-
-#define ARRAY_REMOVE_SWAP(a, i)                                \
-    do {                                                       \
-        if ((uint64_t)(i) < (a).header.len)                    \
-            (a).items[(i)] = (a).items[--(a).header.len];      \
-    } while (0)
+// #define ARRAY_REMOVE_SWAP(a, i)                                \
+//     do {                                                       \
+//         if ((uint64_t)(i) < (a).header.len)                    \
+//             (a).items[(i)] = (a).items[--(a).header.len];      \
+//     } while (0)
 
 
 //************************

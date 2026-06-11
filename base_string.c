@@ -236,10 +236,10 @@ string str_to_upper(Arena* arena, string s)
 }
 
 /*********************************************************************************/
-stringList str_split(Arena* arena, string s, string delim)
+StringList str_split(Arena* arena, string s, string delim)
 {
     string current_split = {0};
-    stringList str_list  = {0};
+    StringList str_list  = {0};
 
     while (1)
     {
@@ -255,7 +255,7 @@ stringList str_split(Arena* arena, string s, string delim)
             s.len = 0;
         }
 
-        stringNode* node = ARENA_PUSH_STRUCT(arena, stringNode);
+        StringNode* node = ARENA_PUSH_STRUCT(arena, StringNode);
         node->s = str_copy(arena, current_split);
         QUEUE_PUSH(str_list.first, str_list.last, node);
         str_list.node_count++;
@@ -269,10 +269,10 @@ stringList str_split(Arena* arena, string s, string delim)
 
 
 /*********************************************************************************/
-stringList str_split_skip_empty(Arena* arena, string s, string delim)
+StringList str_split_skip_empty(Arena* arena, string s, string delim)
 {
     string current_split = {0};
-    stringList str_list  = {0};
+    StringList str_list  = {0};
 
     while (s.len > 0)
     {
@@ -291,7 +291,7 @@ stringList str_split_skip_empty(Arena* arena, string s, string delim)
         // skip over empty splits
         if (idx == 0) continue;
 
-        stringNode* node = ARENA_PUSH_STRUCT(arena, stringNode);
+        StringNode* node = ARENA_PUSH_STRUCT(arena, StringNode);
         node->s = str_copy(arena, current_split);
 
         QUEUE_PUSH(str_list.first, str_list.last, node);
