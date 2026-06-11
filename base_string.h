@@ -38,8 +38,8 @@ struct stringList
 //     uint64_t capacity;
 // };
 
-#define str_lit(s)  str_new((char*)(s), sizeof(s) - 1)
-#define str_varg(s) (int)((s).len), ((s).ptr)
+#define STR_LIT(s)  str_new((char*)(s), sizeof(s) - 1)
+#define STR_VARG(s) (int)((s).len), ((s).ptr)
 
 string str_new(char* ptr, uint64_t len);
 string str_from_cstr(char* ptr);

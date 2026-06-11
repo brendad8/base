@@ -103,7 +103,7 @@ string str_slice_len(string s, uint64_t start, uint64_t length)
 /*********************************************************************************/
 bool32 str_starts_with(string s, string prefix) 
 {
-    if (s.len < prefix.len)
+    if (s.len < prefix.len || prefix.len == 0)
         return 0;
 
     return memcmp(s.ptr, prefix.ptr, prefix.len) == 0;
@@ -112,7 +112,7 @@ bool32 str_starts_with(string s, string prefix)
 /*********************************************************************************/
 bool32 str_ends_with(string s, string suffix) 
 {
-    if (s.len < suffix.len)
+    if (s.len < suffix.len || suffix.len == 0)
         return 0;
 
     return memcmp(s.ptr + (s.len - suffix.len), suffix.ptr, suffix.len) == 0;
@@ -240,8 +240,6 @@ stringList str_split(Arena* arena, string s, string delim)
 {
     string current_split = {0};
     stringList str_list  = {0};
-
-    bool32 ends_with_delim = str_ends_with(s, delim);
 
     while (1)
     {
