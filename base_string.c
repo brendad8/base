@@ -241,6 +241,8 @@ stringList str_split(Arena* arena, string s, string delim)
     string current_split = {0};
     stringList str_list  = {0};
 
+    bool32 ends_with_delim = str_ends_with(s, delim);
+
     while (s.len > 0)
     {
         int32_t idx = str_find_idx_first(s, delim);
@@ -257,8 +259,14 @@ stringList str_split(Arena* arena, string s, string delim)
 
         stringNode* node = ARENA_PUSH_STRUCT(arena, stringNode);
         node->s = str_copy(arena, current_split);
+        QUEUE_PUSH(str_list.first, str_list.last, node);
+        str_list.node_count++;
+    }
 
-        printf("current_split = %s\n", node->s.ptr);
+    if (ends_with_delim)
+    {
+        stringNode* node = ARENA_PUSH_STRUCT(arena, stringNode);
+        node->s = str_copy(arena, (string){0});   // empty string
 
         QUEUE_PUSH(str_list.first, str_list.last, node);
         str_list.node_count++;
@@ -276,7 +284,7 @@ stringList str_split_skip_empty(Arena* arena, string s, string delim)
     while (s.len > 0)
     {
         int32_t idx = str_find_idx_first(s, delim);
-        if (idx != 0)
+        if (idx != -1)
         {
             current_split = str_slice(s, 0, idx);
             s = str_slice(s, idx + delim.len, s.len);
