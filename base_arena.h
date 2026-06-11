@@ -2,11 +2,23 @@
 #ifndef BASE_ARENA_H
 #define BASE_ARENA_H
 
+//***************************************************************************
+//          INCLUDE FILES
+//***************************************************************************
+
 #include "base_core.h"
 
-static const uint64_t arena_default_alignment = sizeof(void*);
+//***************************************************************************
+//          GLOBAL CONSTANTS
+//***************************************************************************
+
+static const uint64_t arena_default_alignment    = sizeof(void*);
 static const uint64_t arena_default_reserve_size = MB(64);
 static const uint64_t arena_default_commit_size  = KB(64);
+
+//***************************************************************************
+//          TYPES
+//***************************************************************************
 
 typedef struct ArenaParams ArenaParams;
 struct ArenaParams
@@ -29,18 +41,16 @@ struct Arena
     ArenaParams params;    // configurable options for arena
 };
 
-Arena* arena_alloc(ArenaParams);
-void   arena_release(Arena* arena);
+typedef struct 
+{
+    Arena* arena;   // underlying arena
+    uint64_t pos;   // base position when created
 
-void* arena_push(Arena* arena, uint64_t size);
-void* arena_push_no_zero(Arena* arena, uint64_t size);
+} ArenaTemp;
 
-void* arena_push_align(Arena* arena, uint64_t size, uint64_t align);
-void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align);
-
-void arena_pop_to(Arena* arena, uint64_t pos);
-void arena_pop(Arena* arena, uint64_t size);
-void arena_clear(Arena* arena);
+//***************************************************************************
+//          MACROS
+//***************************************************************************
 
 #define ARENA_PUSH_ARRAY(arena, type, count)         (type*)arena_push((arena), sizeof(type)*(count))
 #define ARENA_PUSH_ARRAY_NO_ZERO(arena, type, count) (type*)arena_push_no_zero((arena), sizeof(type)*(count))
@@ -48,14 +58,25 @@ void arena_clear(Arena* arena);
 #define ARENA_PUSH_STRUCT(arena, type)         (type*)arena_push((arena), sizeof(type))
 #define ARENA_PUSH_STRUCT_NO_ZERO(arena, type) (type*)arena_push_no_zero((arena), sizeof(type))
 
-typedef struct 
-{
-    Arena* arena;
-    uint64_t pos;
+//***************************************************************************
+//          Function Prototypes
+//***************************************************************************
 
-} ArenaTemp;
+Arena*    arena_alloc                (ArenaParams);
+void      arena_release              (Arena* arena);
 
-ArenaTemp arena_temp_begin(Arena* arena);
-void arena_temp_end(ArenaTemp temp);
+void*     arena_push                 (Arena* arena, uint64_t size);
+void*     arena_push_no_zero         (Arena* arena, uint64_t size);
+
+void*     arena_push_align           (Arena* arena, uint64_t size, uint64_t align);
+void*     arena_push_align_no_zero   (Arena* arena, uint64_t size, uint64_t align);
+
+void      arena_pop_to               (Arena* arena, uint64_t pos);
+void      arena_pop                  (Arena* arena, uint64_t size);
+void      arena_clear                (Arena* arena);
+
+ArenaTemp arena_temp_begin           (Arena* arena);
+void      arena_temp_end             (ArenaTemp temp);
+
 
 #endif // BASE_ARENA_H

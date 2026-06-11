@@ -6,13 +6,16 @@
 #ifndef BASE_CORE_H
 #define BASE_CORE_H
 
+//***************************************************************************
+//          INCLUDE_FILES
+//***************************************************************************
+
 #include <stdint.h>
 #include <string.h>
 
-
-//**************************
-// Base Types
-//**************************
+//***************************************************************************
+//          EXPORTED TYPES
+//***************************************************************************
 
 typedef int8_t     bool8;
 typedef int16_t    bool16;
@@ -22,9 +25,9 @@ typedef int64_t    bool64;
 typedef float      float32;
 typedef double     float64;
 
-//**************************
-// Units
-//**************************
+//***************************************************************************
+//          MACROS
+//***************************************************************************
 
 #define KB(n)  (((uint64_t)(n)) << 10)
 #define MB(n)  (((uint64_t)(n)) << 20)
@@ -34,11 +37,6 @@ typedef double     float64;
 #define THOUSAND(n) ((n)*1000)
 #define MILLION(n)  ((n)*1000000)
 #define BILLION(n)  ((n)*1000000000)
-
-
-//**************************
-// Useful Macros
-//**************************
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -52,11 +50,6 @@ typedef double     float64;
 #define CEIL_INTEGER_DIV(a,b) (((a) + (b) - 1)/(b))
 
 #define SWAP(T,a,b) do{T t__ = a; a = b; b = t__;}while(0)
-
-
-//**************************
-// Memory Macros/Functions
-//**************************
 
 #define COMPOSE_64BIT(a,b)  ((((uint64)a) << 32) | ((uint64)b))
 #define COMPOSE_32BIT(a,b)  ((((uint32)a) << 16) | ((uint32)b))
@@ -72,9 +65,9 @@ typedef double     float64;
 #define EXTRACT16(word, pos)   (((word) >> ((pos)*16)) & max_uint16)
 #define EXTRACT32(word, pos)   (((word) >> ((pos)*32)) & max_uint32)
 
-//**************************
-// Compiler macros 
-//**************************
+//***************************************************************************
+//          COMPILER DEFINES
+//***************************************************************************
 
 #if defined(_MSC_VER)
     #define COMPILER_MSVC 1
@@ -87,9 +80,9 @@ typedef double     float64;
 #endif
 
 
-//**************************
-// Platform macros 
-//**************************
+//***************************************************************************
+//          PLATFORM DEFINES
+//***************************************************************************
 
 #if defined(_WIN32)
     #define PLATFORM_WINDOWS 1
@@ -101,32 +94,32 @@ typedef double     float64;
     #error Unknown platform
 #endif
 
-//**************************
-// Alignment
-//**************************
+//***************************************************************************
+//          ALIGN_OF + ALIGN_TYPE
+//***************************************************************************
 
 #if COMPILER_MSVC
-    #define align_of(T) __alignof(T)
+    #define ALIGN_OF(T) __alignof(T)
 #elif COMPILER_CLANG
-    #define align_of(T) __alignof(T)
+    #define ALIGN_OF(T) __alignof(T)
 #elif COMPILER_GCC
-    #define align_of(T) __alignof__(T)
+    #define ALIGN_OF(T) __alignof__(T)
 #else
-    #error align_of not defined for this compiler.
+    #error ALIGN_OF not defined for this compiler.
 #endif
 
 #if COMPILER_MSVC
-    #define AlignType(x) __declspec(align(x))
+    #define ALIGN_TYPE(x) __declspec(align(x))
 #elif COMPILER_CLANG || COMPILER_GCC
-    #define AlignType(x) __attribute__((aligned(x)))
+    #define ALIGN_TYPE(x) __attribute__((aligned(x)))
 #else
-    #error AlignType not defined for this compiler.
+    #error ALIGN_TYPE not defined for this compiler.
 #endif
 
 
-//**************************
-// Assert
-//**************************
+//***************************************************************************
+//          ASSERT
+//***************************************************************************
 
 #if COMPILER_CLANG || COMPILER_GCC
     #define TRAP() __builtin_trap()
@@ -145,9 +138,9 @@ typedef double     float64;
 #endif
 
 
-//**************************
-// Basic Constants
-//**************************
+//***************************************************************************
+//          EXPORTED CONSTANTS
+//***************************************************************************
 
 static uint32_t sign32     = 0x80000000;
 static uint32_t exponent32 = 0x7F800000;

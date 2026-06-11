@@ -1,19 +1,51 @@
 
+#ifndef BASE_DATA_STRUCTURES_H
+#define BASE_DATA_STRUCTURES_H
+
+//***************************************************************************
+//          INCLUDE FILES
+//***************************************************************************
+
 #include "base_core.h"
 #include "base_arena.h"
 
-//************************
-// Stack
-//************************
+//***************************************************************************
+//          TYPES
+//***************************************************************************
 
-//  struct Node
-//  {
-//       // Node Data Here
-//       Node* next
-//  };
+typedef struct ArrayHeader ArrayHeader;
+struct ArrayHeader
+{
+    uint64_t len;
+    uint64_t cap;
+};
+
+// typedef struct HashMapEntry HashMapEntry;
+// struct HashMapEntry 
+// {
+//     uint64_t hash;
+//     uint64_t idx;
+// };
 //
-//  // Example Stack
-//  Node* first;
+// typedef struct HashMapHeader HashMapHeader;
+// struct HashMapHeader
+// {
+//     uint64_t len;
+//     uint64_t cap;
+//     uint64_t insertIndex;
+//     uint64_t usedCountThreshold;
+//     uint64_t deletedCount;
+//     uint64_t deletedCountThreshold;
+//     HashMapEntry* table;
+// };
+
+//***************************************************************************
+//          MACROS
+//***************************************************************************
+
+//*******************
+// STACK
+//*******************
 
 #define STACK_PUSH_N(first, node, next) \
     ((node)->next = (first), (first) = (node))
@@ -25,19 +57,9 @@
 
 #define STACK_POP(first) STACK_POP_N(first, next)
 
-//************************
-// Queue
-//************************
-
-//  struct Node
-//  {
-//       // Node Data Here
-//       Node* next
-//  };
-// 
-//  // Example Queue
-//  Node* first;
-//  Node* last;
+//*******************
+// QUEUE
+//*******************
 
 #define QUEUE_PUSH_N(first, last, node, next)                       \
     ((first) == NULL ?                                              \
@@ -52,20 +74,9 @@
 #define QUEUE_PUSH(first, last, node) QUEUE_PUSH_N(first, last, node, next)
 #define QUEUE_POP(first, last) QUEUE_POP_N(first, last, next) 
 
-
-//************************
-// Doubly-Linked List
-//************************
-
-// struct Node
-// {
-//     // Node Data Here
-//     Node* next;
-//     Node* prev;
-// }
-//
-// Node* first = {0};
-// Node* last  = {0};
+//*******************
+// DOUBLY-LINKED LIST
+//*******************
 
 #define DLL_PUSH_BACK_NP(first, last, node, next, prev)                                   \
     ((first) == NULL ?                                                                    \
@@ -106,36 +117,14 @@
 #define DLL_REMOVE_FIRST(first, last)                   DLL_REMOVE_FIRST_NP(first, last, next, prev)
 #define DLL_REMOVE_LAST(first, last)                    DLL_REMOVE_LAST_NP(first, last, next, prev)
 
-//************************
-// Dynamic Array
-//************************
-
-//  struct FloatArray 
-//  {
-//      ArrayHeader header;
-//      float* items;
-//  };
-// 
-//  FloatArray floats = {0};
-//  ARRAY_RESERVE(arena, floats, 128);   // reserve space for 128 items
-//  ARRAY_PUSH(arena, floats, 3.1415f);  // push to back
-//  ...
-
-typedef struct ArrayHeader ArrayHeader;
-struct ArrayHeader
-{
-    uint64_t len;
-    uint64_t capacity;
-};
-
-void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64_t item_size, uint64_t count);
-// void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
-// void  array_shift_down(ArrayHeader* header, void* items, uint64_t item_size, uint64_t from_idx);
+//*******************
+// DYNAMIC ARRAY
+//*******************
 
 #define ARRAY_HEADER_CAST(a) (&(a).header)
 #define ARRAY_ITEM_SIZE(a) (sizeof(*(a).items))
 #define ARRAY_LEN(a) (a.header.len)
-#define ARRAY_CAP(a) (a.header.capacity)
+#define ARRAY_CAP(a) (a.header.cap)
 
 #define ARRAY_PUSH(arena, a, item)                                                                         \
     (*((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1),  \
@@ -188,45 +177,11 @@ void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64_t item_s
             (a).items[i] = (a).items[--(a).header.len]; \
     } while(0)
 
-// #define ARRAY_REMOVE(a, i)                                                                  \
-//     do {                                                                                    \
-//         if ((uint64_t)(i) < (a).header.len)                                                 \
-//         {                                                                                   \
-//             array_shift_down(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i) + 1); \
-//             (a).header.len--;                                                               \
-//         }                                                                                   \
-//     } while (0)
-
-
-// #define ARRAY_REMOVE_SWAP(a, i)                                \
-//     do {                                                       \
-//         if ((uint64_t)(i) < (a).header.len)                    \
-//             (a).items[(i)] = (a).items[--(a).header.len];      \
-//     } while (0)
-
 
 //************************
 // Hash Map
 //************************
 
-typedef struct HashMapEntry HashMapEntry;
-struct HashMapEntry 
-{
-    uint64_t hash;
-    uint64_t idx;
-};
-
-typedef struct HashMapHeader HashMapHeader;
-struct HashMapHeader
-{
-    uint64_t len;
-    uint64_t capacity;
-    uint64_t insertIndex;
-    uint64_t usedCountThreshold;
-    uint64_t deletedCount;
-    uint64_t deletedCountThreshold;
-    HashMapEntry* table;
-};
 
 // #define HMAP_RESERVE(arena, m, n)
 // #define HMAP_DEFAULT(arena, m, val)
@@ -263,3 +218,10 @@ struct HashMapHeader
 // #define SMAP_GET_PTR_NULL(m, k)
 // #define SMAP_DEL(scratch, m, k)
 
+//***************************************************************************
+//          FUNCTION PROTOTYPES
+//***************************************************************************
+
+void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64_t item_size, uint64_t count);
+
+#endif // BASE_DATA_STRUCTURES_H
