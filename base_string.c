@@ -243,7 +243,7 @@ stringList str_split(Arena* arena, string s, string delim)
 
     bool32 ends_with_delim = str_ends_with(s, delim);
 
-    while (s.len > 0)
+    while (1)
     {
         int32_t idx = str_find_idx_first(s, delim);
         if (idx != -1)
@@ -261,19 +261,14 @@ stringList str_split(Arena* arena, string s, string delim)
         node->s = str_copy(arena, current_split);
         QUEUE_PUSH(str_list.first, str_list.last, node);
         str_list.node_count++;
-    }
 
-    if (ends_with_delim)
-    {
-        stringNode* node = ARENA_PUSH_STRUCT(arena, stringNode);
-        node->s = str_copy(arena, (string){0});   // empty string
-
-        QUEUE_PUSH(str_list.first, str_list.last, node);
-        str_list.node_count++;
+        if (idx == -1)
+            break;
     }
 
     return str_list;
 }
+
 
 /*********************************************************************************/
 stringList str_split_skip_empty(Arena* arena, string s, string delim)
