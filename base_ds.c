@@ -5,19 +5,29 @@
 #include "base_arena.h"
 
 /*********************************************************************************/
-void* array_grow(Arena* arena, ArrayHeader* header, 
-                void* items, uint64_t item_size, uint64_t count)
+void* array_grow(Arena* arena, void* items, uint64_t item_size, uint64_t count)
 {
+    ArrayHeader* header;
+    uint64_t len = 0;
+    uint64_t cap = 0;
+    
     void* new_ptr;
     uint64_t new_len;
     uint64_t new_cap;
 
-    new_len = header->len + count;
-    if (new_len < header->cap)
+    if (items != NULL)
+    {
+        header = ((ArrayHeader*)items - 1);
+        len = header->len;
+        cap = header->cap;
+    }
+
+    new_len = len + count;
+    if (new_len < cap)
         return items;
 
-    if (new_len < 2 * header->cap)
-        new_cap = 2 * header->cap;
+    if (new_len < 2 * cap)
+        new_cap = 2 * cap;
     else if (new_len < 4)
         new_cap = 4; // minimum capacity of 4
     else // NOTE(bcall): if new_len > 2 * capacity, then set cap to 1.5*new_len
@@ -25,11 +35,12 @@ void* array_grow(Arena* arena, ArrayHeader* header,
 
     if (items == NULL)
     {
-        void* ptr = arena_push(arena, new_cap * item_size);
+        void* ptr = arena_push(arena, sizeof(ArrayHeader) + new_cap * item_size);
         if (ptr)
         {
-            header->cap = new_cap;
-            return ptr;
+            ArrayHeader* hdr = (ArrayHeader*)ptr;
+            hdr->cap = new_cap;
+            return (void*)(hdr + 1);
         }
         else // WARN(bcall): memory allocation fails hiddenly... 
         {
@@ -54,10 +65,13 @@ void* array_grow(Arena* arena, ArrayHeader* header,
     else
     {
         // NOTE(bcall): push room for entire new cap and move to new location...
-        void* ptr = arena_push(arena, new_cap * item_size);
+        void* ptr = arena_push(arena, sizeof(ArrayHeader) + new_cap * item_size);
         if (ptr)
         {
-            header->cap = new_cap;
+            ArrayHeader* hdr = (ArrayHeader*)ptr;
+            hdr->cap = new_cap;
+
+            ptr = (void*)(hdr + 1);
             memmove(ptr, items, header->len * item_size);
             
             // TODO(bcall): free prev items pointer if arena has free list...

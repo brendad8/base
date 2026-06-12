@@ -121,61 +121,52 @@ struct ArrayHeader
 // DYNAMIC ARRAY
 //*******************
 
-#define ARRAY_HEADER_CAST(a) (&(a).header)
-#define ARRAY_ITEM_SIZE(a) (sizeof(*(a).items))
-#define ARRAY_LEN(a) (a.header.len)
-#define ARRAY_CAP(a) (a.header.cap)
+#define ARRAY_HEADER_CAST(a) (((ArrayHeader*)(a))-1)
+#define ARRAY_ITEM_SIZE(a) (sizeof(*(a)))
+#define ARRAY_LEN(a) (ARRAY_HEADER_CAST((a))->len)
+#define ARRAY_CAP(a) (ARRAY_HEADER_CAST((a))->cap)
 
 #define ARRAY_PUSH(arena, a, item)                                                                         \
-    (*((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1),  \
-    (a).items[(a).header.len++] = (item))
+    ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), 1),  \
+    (a)[ARRAY_LEN(a)++] = (item))
 
 #define ARRAY_ADD(arena, a, n)                                                                              \
-    (*((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (n)), \
-    (a).header.len += (n),                                                                                  \
-    &(a).items[(a).header.len - (n)])
+    ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), (n)), \
+    ARRAY_LEN(a) += (n),                                                                                  \
+    &(a)[ARRAY_LEN(a) - (n)])
 
 #define ARRAY_RESERVE(arena, a, n) \
-    (*((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (n)))
+    ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), (n)))
 
-#define ARRAY_CLEAR(a) ((a).header.len = 0)
-#define ARRAY_CLEAR_ZERO(a) (memset((a).items, 0, ARRAY_ITEM_SIZE(a)*ARRAY_LEN(a)), (a).header.len = 0)
+#define ARRAY_CLEAR(a) (ARRAY_LEN(a) = 0)
+#define ARRAY_CLEAR_ZERO(a) (memset((a), 0, ARRAY_ITEM_SIZE(a)*ARRAY_LEN(a)), ARRAY_LEN(a) = 0)
 
 #define ARRAY_INSERT_N(arena, a, i, n)                                                \
     (ARRAY_ADD(arena, a, n),                                                          \
-    memmove(&(a).items[(i)+(n)], &(a).items[i], sizeof(*(a).items) * ((a).header.len - (n) - (i))))
+    memmove(&(a)[(i)+(n)], &(a)[i], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a) - (n) - (i))))
 
 #define ARRAY_INSERT(arena, a, i, item)   \
     (ARRAY_INSERT_N(arena, a, i, 1),      \
-    (a).items[i] = item) 
-
-// #define ARRAY_INSERT(arena, a, i, item)                                                                          \
-//     do {                                                                                                         \
-//         if ((uint64_t)(i) <= (a).header.len)                                                                     \
-//         {                                                                                                        \
-//             *((void**)&(a).items) = array_grow((arena), ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), 1); \
-//             array_shift_up(ARRAY_HEADER_CAST(a), (a).items, ARRAY_ITEM_SIZE(a), (i));                            \
-//             (a).items[(i)] = (item);                                                                             \
-//             (a).header.len++;                                                                                    \
-//         }                                                                                                        \
-//     } while (0)
+    (a)[i] = item) 
 
 #define ARRAY_REMOVE(a, i) \
     ARRAY_REMOVE_N((a), (i), 1)
 
-#define ARRAY_REMOVE_N(a, i, n)                                                                        \
-    do {                                                                                               \
-        if ((i) + (n) < (a).header.len) {                                                              \
-            memmove(&(a).items[i], &(a).items[(i)+(n)], sizeof(*(a).items)*((a).header.len-(n)-(i)));  \
-            (a).header.len -= (n);                                                                     \
-        }                                                                                              \
+#define ARRAY_REMOVE_N(a, i, n)                                                              \
+    do {                                                                                     \
+        if ((i) + (n) < ARRAY_LEN(a)) {                                                      \
+            memmove(&(a)[i], &(a)[(i)+(n)], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a)-(n)-(i)));    \
+            ARRAY_LEN(a) -= (n);                                                           \
+        }                                                                                    \
     } while(0)
 
-#define ARRAY_REMOVE_SWAP(a,i)                          \
-    do {                                                \
-        if ((i) < (a).header.len)                       \
-            (a).items[i] = (a).items[--(a).header.len]; \
+#define ARRAY_REMOVE_SWAP(a,i)            \
+    do {                                  \
+        if ((i) < ARRAY_LEN(a))           \
+            (a)[i] = (a)[--ARRAY_LEN(a)]; \
     } while(0)
+
+
 
 
 //************************
@@ -222,6 +213,6 @@ struct ArrayHeader
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
-void* array_grow(Arena* arena, ArrayHeader* header, void* items, uint64_t item_size, uint64_t count);
+void* array_grow(Arena* arena, void* items, uint64_t item_size, uint64_t count);
 
 #endif // BASE_DATA_STRUCTURES_H
