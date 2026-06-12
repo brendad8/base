@@ -115,17 +115,10 @@ static void test_doubly_linked_list(void)
     }
 }
 
-typedef struct FloatArray FloatArray;
-struct FloatArray 
-{
-    ArrayHeader header;
-    float* items;
-};
-
 static void test_dynamic_array(void)
 {
     Arena* arena = arena_alloc((ArenaParams){0});
-    FloatArray floats = {0};
+    float* floats = NULL;
 
     ARRAY_RESERVE(arena, floats, 3);
     TEST_ASSERT(ARRAY_LEN(floats) == 0);
@@ -139,14 +132,14 @@ static void test_dynamic_array(void)
     TEST_ASSERT(ARRAY_LEN(floats) == 5);
     TEST_ASSERT(ARRAY_CAP(floats) == 8);
 
-    void* old_array_ptr = floats.items;
-    
+    void* old_array_ptr = floats;
+
     arena_push(arena, 400);
     ARRAY_ADD(arena, floats, 4);
     TEST_ASSERT(ARRAY_LEN(floats));
     TEST_ASSERT(ARRAY_CAP(floats) == 16);
 
-    void* new_array_ptr = floats.items;
+    void* new_array_ptr = floats;
     TEST_ASSERT(new_array_ptr != old_array_ptr);
 
     ARRAY_CLEAR_ZERO(floats);
@@ -156,21 +149,21 @@ static void test_dynamic_array(void)
     {
         float item = (float)i;
         ARRAY_PUSH(arena, floats, item);
-        TEST_ASSERT(floats.items[i] == item);
+        TEST_ASSERT(floats[i] == item);
     }
 
     ARRAY_INSERT(arena, floats, 5, 99.0f);
-    TEST_ASSERT(floats.items[5] == 99.0f);
+    TEST_ASSERT(floats[5] == 99.0f);
 
     // for (int i = 0; i < 10; i++)
     // {
     //     printf("%d: %f\n", i, floats.items[i]);
     // }
 
-    TEST_ASSERT(floats.items[4] == 4.0f);
-    TEST_ASSERT(floats.items[6] == 5.0f);
-    TEST_ASSERT(floats.items[10] == 9.0f);
-    
+    TEST_ASSERT(floats[4] == 4.0f);
+    TEST_ASSERT(floats[6] == 5.0f);
+    TEST_ASSERT(floats[10] == 9.0f);
+
     ARRAY_REMOVE(floats, 5);
     for (int i = 0; i < 10; i++)
     {
@@ -180,10 +173,11 @@ static void test_dynamic_array(void)
     }
 
     ARRAY_REMOVE_SWAP(floats, 5);
-    TEST_ASSERT((int)(floats.items[5]) == 9);
+    TEST_ASSERT((int)(floats[5]) == 9);
 
     arena_release(arena);
 }
+
 
 int main(void)
 {
