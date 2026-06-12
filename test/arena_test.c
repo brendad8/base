@@ -17,7 +17,7 @@ static void test_arena_basic_alloc(void)
 
 static void test_arena_push(void)
 {
-    ArenaParams params = {KB(4), KB(64)};
+    ArenaParams params = {KB(4), KB(64), 0};
     Arena* arena = arena_alloc(params);
     char* ptr = arena_push(arena, KB(5));
     TEST_ASSERT(ptr != NULL);
@@ -50,7 +50,6 @@ static void test_arena_push_zeroes_memory(void)
         TEST_ASSERT(mem[i] == 0);
     arena_release(arena);
 }
-
 
 static void test_arena_pop(void)
 {
@@ -169,12 +168,25 @@ static void test_arena_stress(void)
 
 static void test_arena_out_of_memory(void)
 {
-    bool32 success = 1;
-    Arena* arena = arena_alloc((ArenaParams){KB(4), KB(4)});
+    Arena* arena = arena_alloc((ArenaParams){KB(64), KB(64), 0});
     char* ptr = arena_push(arena, GB(1));
     TEST_ASSERT(ptr == NULL);
     arena_release(arena);
 }
+
+
+static void test_arena_growable(void)
+{
+    Arena* arena = arena_alloc((ArenaParams){KB(64), KB(64), 1});
+    char* ptr = arena_push(arena, KB(64) + 20);
+    
+    TEST_ASSERT(ptr != NULL);
+    TEST_ASSERT(arena->next != NULL);
+    TEST_ASSERT(arena->next->params.commit_size == KB(128));
+    TEST_ASSERT(arena->next->params.commit_size == KB(128));
+    arena_release(arena);
+}
+
 
 
 
@@ -192,6 +204,7 @@ int main(void)
     test_push_struct();
     test_arena_stress();
     test_arena_out_of_memory();
+    test_arena_growable();
 
     test_print_results("Arena");
 

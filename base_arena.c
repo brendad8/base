@@ -1,4 +1,6 @@
 
+// #include <stdio.h>
+
 #include "base_core.h"
 #include "base_arena.h"
 #include "base_vmemory.c"
@@ -20,13 +22,13 @@ Arena* arena_alloc(ArenaParams params)
     void* base = vm_reserve(params.reserve_size);
     vm_commit(base, params.commit_size);
 
-    Arena* next = NULL;
     Arena* arena = (Arena*)base;
     arena->base = (uint8_t*)arena;
     arena->pos = sizeof(Arena);
     arena->reserved = params.reserve_size;
     arena->committed = params.commit_size;
     arena->params = params;
+    arena->next = NULL;
 
     return arena;
 }
@@ -52,6 +54,9 @@ void arena_release(Arena* arena)
 /*********************************************************************************/
 static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool32 zero)
 {
+    while (arena->next != NULL)
+        arena = arena->next;
+
     uint64_t new_pos = ALIGN_UP_POW2(arena->pos, align);
     uint64_t new_pos_end = new_pos + size;
 
@@ -59,36 +64,55 @@ static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool32
     {
         // commit enough memory to fit new allocation and be aligned with os commit size
         uint64_t commit_size = ALIGN_UP_POW2(new_pos_end, arena->params.commit_size) - arena->committed;
+
+        // TODO(bcall): check free list..
         
         if (arena->committed + commit_size > arena->reserved)
         {
-            // TODO(bcall): if free_list commit remaining memmory and add to free list...
-            // if (arena->params.growable)
-            // {
-            //     if (size < arena->params.reserve_size)
-            //     {
-            //         ArenaParams next_params = arena->params;
-            //         uint64_t next_pos_end = ALIGN_UP_POW2(sizeof(Arena), sizeof(void*)) + size;
-            //         uint64_t next_commit_size = ALIGN_UP_POW2(new_pos_end, arena->params.commit_size) - arena->committed;
-            //         next_params.commit_size = Max(arena->params.commit_size, next_commit_size);
-            //         Arena* next = ArenaAlloc();
-            //     }
-            //     else
-            //     {
-            //
-            //     }
-            // }
-            // else
-            // {
-            //     return NULL;
-            // }
-            return NULL;
-        }
 
-        // commit new memory starting from end of initially commited region
-        uint8_t* commit_end_ptr = arena->base + arena->committed;
-        vm_commit(commit_end_ptr, commit_size); // WARN(bcall): VM_Commit failure not handled. 
-        arena->committed += commit_size;
+            // TODO(bcall): commit remaining memmory
+            // TODO(bcall): if free_list add to free list
+            
+            if (arena->params.growable)
+            {
+                ArenaParams new_arena_params = arena->params;
+                new_pos = ALIGN_UP_POW2(sizeof(Arena), align);
+                new_pos_end = new_pos + size;
+
+                // NOTE(bcall): adjust next arena params to make sure allocation fits in single arena
+                if (new_pos_end > new_arena_params.commit_size)
+                {
+                    new_arena_params.commit_size = ALIGN_UP_POW2(new_pos_end, arena->params.commit_size);
+                    if (new_pos_end > new_arena_params.reserve_size)
+                    {
+                        new_arena_params.reserve_size = ALIGN_UP_POW2(new_pos_end, arena->params.reserve_size);
+                    }
+                }
+                // printf("commit_size = %llu, reserve_size = %llu\n", arena->params.commit_size, arena->params.reserve_size);
+                // printf("commit_size = %llu, reserve_size = %llu\n", new_arena_params.commit_size, new_arena_params.reserve_size);
+                
+                Arena* new_arena = arena_alloc(new_arena_params);
+                arena->next = new_arena;
+
+                new_arena->pos = new_pos_end;
+                void* result = new_arena->base + new_pos;
+                if (zero) memset(result, 0, size);
+
+                return result;
+            }
+            else
+            {
+                // WARN(bcall): out of memory
+                return NULL;
+            }
+        }
+        else
+        {
+            // commit new memory starting from end of initially commited region
+            uint8_t* commit_end_ptr = arena->base + arena->committed;
+            vm_commit(commit_end_ptr, commit_size); // WARN(bcall): vm_commit failure not handled. 
+            arena->committed += commit_size;
+        }
     }
     
     arena->pos = new_pos_end;
