@@ -126,23 +126,43 @@ struct ArrayHeader
 #define ARRAY_LEN(a)                    (ARRAY_HEADER_CAST((a))->len)
 #define ARRAY_CAP(a)                    (ARRAY_HEADER_CAST((a))->cap)
 
+#define ARRAY_REMOVE(a, i)                    (ARRAY_REMOVEN((a), (i), 1))
+#define ARRAY_REMOVEN(a, i, n)                ((i) + (n) < ARRAY_LEN(a) ? memmove(&(a)[i], &(a)[(i)+(n)], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a)-(n)-(i))), ARRAY_LEN(a) -= (n) : 0)
+#define ARRAY_REMOVE_SWAP(a,i)                ((i) < ARRAY_LEN(a) ? (a)[i] = (a)[ARRAY_LEN(a)-1], ARRAY_LEN(a)-- : 0)
+
+#define ARRAY_CLEAR(a)                        (ARRAY_LEN(a) = 0)
+#define ARRAY_CLEAR_ZERO(a)                   (memset((a), 0, ARRAY_ITEM_SIZE(a)*ARRAY_LEN(a)), ARRAY_LEN(a) = 0)
+
+//*******************
+// HEAP BACKED ARRAY
+//*******************
+
+#define ARRAY_RESERVE(a, n)            ((a) = array_grow_heap((a), ARRAY_ITEM_SIZE(a), (n)))
+#define ARRAY_SETCAP(a, cap)           void     
+
+#define ARRAY_PUSH(a, item)            ((a) = array_grow_heap((a), ARRAY_ITEM_SIZE(a), 1), (a)[ARRAY_LEN(a)++] = (item))
+#define ARRAY_ADD(a)                   ARRAY_ADDN((a), 1) 
+#define ARRAY_ADDN(a, n)               ((a) = array_grow_heap((a), ARRAY_ITEM_SIZE(a), (n)), ARRAY_LEN(a) += (n), &(a)[ARRAY_LEN(a) - (n)])
+
+#define ARRAY_INSERTN(a, i, n)         (ARRAY_ADDN(a, n), memmove(&(a)[(i)+(n)], &(a)[i], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a) - (n) - (i))))
+#define ARRAY_INSERT(a, i, item)       (ARRAY_INSERTN(a, i, 1), (a)[i] = item)
+
+#define ARRAY_FREE(a)                  ((a) ? free(ARRAY_HEADER_CAST(a)), 1 : 0)
+
+//*******************
+// ARENA BACKED ARRAY
+//*******************
+
 // TODO(bcall): reserve n additional or reserve cap of n...
-#define ARRAY_RESERVE(arena, a, n)      ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), (n)))
-#define ARRAY_SET_CAP(arena, a, cap)    void     
+#define ARRAY_RESERVE_ARENA(arena, a, n)      ((a) = array_grow_arena((arena), (a), ARRAY_ITEM_SIZE(a), (n)))
+#define ARRAY_SETCAP_ARENA(arena, a, cap)     void     
 
-#define ARRAY_PUSH(arena, a, item)      ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), 1), (a)[ARRAY_LEN(a)++] = (item))
-#define ARRAY_ADD(arena, a)             ARRAY_ADD_N((arena), (a), 1) 
-#define ARRAY_ADD_N(arena, a, n)        ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), (n)), ARRAY_LEN(a) += (n), &(a)[ARRAY_LEN(a) - (n)])
+#define ARRAY_PUSH_ARENA(arena, a, item)      ((a) = array_grow_arena((arena), (a), ARRAY_ITEM_SIZE(a), 1), (a)[ARRAY_LEN(a)++] = (item))
+#define ARRAY_ADD_ARENA(arena, a)             ARRAY_ADDN_ARENA((arena), (a), 1) 
+#define ARRAY_ADDN_ARENA(arena, a, n)         (((a) = array_grow_arena((arena), (a), ARRAY_ITEM_SIZE(a), (n))), ARRAY_LEN(a) += (n), &(a)[ARRAY_LEN(a) - (n)])
 
-#define ARRAY_INSERT_N(arena, a, i, n)  (ARRAY_ADD_N(arena, a, n), memmove(&(a)[(i)+(n)], &(a)[i], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a) - (n) - (i))))
-#define ARRAY_INSERT(arena, a, i, item) (ARRAY_INSERT_N(arena, a, i, 1), (a)[i] = item)
-
-#define ARRAY_REMOVE(a, i)              (ARRAY_REMOVE_N((a), (i), 1))
-#define ARRAY_REMOVE_N(a, i, n)         ((i) + (n) < ARRAY_LEN(a) ? memmove(&(a)[i], &(a)[(i)+(n)], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a)-(n)-(i))), ARRAY_LEN(a) -= (n) : 0)
-#define ARRAY_REMOVE_SWAP(a,i)          ((i) < ARRAY_LEN(a) ? (a)[i] = (a)[ARRAY_LEN(a)-1], ARRAY_LEN(a)-- : 0)
-
-#define ARRAY_CLEAR(a)                  (ARRAY_LEN(a) = 0)
-#define ARRAY_CLEAR_ZERO(a)             (memset((a), 0, ARRAY_ITEM_SIZE(a)*ARRAY_LEN(a)), ARRAY_LEN(a) = 0)
+#define ARRAY_INSERTN_ARENA(arena, a, i, n)   (ARRAY_ADDN_ARENA(arena, a, n), memmove(&(a)[(i)+(n)], &(a)[i], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a) - (n) - (i))))
+#define ARRAY_INSERT_ARENA(arena, a, i, item) (ARRAY_INSERTN_ARENA(arena, a, i, 1), (a)[i] = item)
 
 
 //************************
@@ -189,6 +209,7 @@ struct ArrayHeader
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
-void* array_grow(Arena* arena, void* items, uint64_t item_size, uint64_t count);
+void* array_grow_arena  (Arena* arena, void* items, uint64_t item_size, uint64_t count);
+void* array_grow_heap                 (void* items, uint64_t item_size, uint64_t count);
 
 #endif // BASE_DATA_STRUCTURES_H

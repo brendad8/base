@@ -1,11 +1,11 @@
 
-// #include <stdio.h>
+#include <stdlib.h>
 
 #include "base_ds.h"
 #include "base_arena.h"
 
 /*********************************************************************************/
-void* array_grow(Arena* arena, void* items, uint64_t item_size, uint64_t count)
+void* array_grow_arena(Arena* arena, void* items, uint64_t item_size, uint64_t count)
 {
     ArrayHeader* header;
     uint64_t len = 0;
@@ -40,6 +40,7 @@ void* array_grow(Arena* arena, void* items, uint64_t item_size, uint64_t count)
         {
             ArrayHeader* hdr = (ArrayHeader*)ptr;
             hdr->cap = new_cap;
+            hdr->len = 0;
             return (void*)(hdr + 1);
         }
         else // WARN(bcall): memory allocation fails hiddenly... 
@@ -83,6 +84,71 @@ void* array_grow(Arena* arena, void* items, uint64_t item_size, uint64_t count)
             return items;
         }
     }
-    return items;
+}
+
+
+void* array_grow_heap(void* items, uint64_t item_size, uint64_t count)
+{
+    ArrayHeader* header;
+    uint64_t len = 0;
+    uint64_t cap = 0;
+    
+    void* new_ptr;
+    uint64_t new_len;
+    uint64_t new_cap;
+
+    if (items != NULL)
+    {
+        header = ((ArrayHeader*)items - 1);
+        len = header->len;
+        cap = header->cap;
+    }
+
+    new_len = len + count;
+    if (new_len < cap)
+        return items;
+
+    if (new_len < 2 * cap)
+        new_cap = 2 * cap;
+    else if (new_len < 4)
+        new_cap = 4;
+    else
+        new_cap = (uint64_t)(3 * new_len / 2);
+
+    if (items == NULL)
+    {
+        void* ptr = malloc(sizeof(ArrayHeader) + new_cap * item_size);
+        if (ptr)
+        {
+            ArrayHeader* hdr = (ArrayHeader*)ptr;
+            hdr->cap = new_cap;
+            hdr->len = 0;
+            return (void*)(hdr + 1);
+        }
+        else // WARN(bcall): memory allocation fails hiddenly... 
+        {
+            return items; 
+        }
+    }
+    else
+    {
+        void* ptr = realloc(ARRAY_HEADER_CAST(items), sizeof(ArrayHeader) + new_cap * item_size);
+        if (ptr)
+        {
+            ArrayHeader* hdr = (ArrayHeader*)ptr;
+            hdr->cap = new_cap;
+            hdr->len = len;
+
+            ptr = (void*)(hdr + 1);
+            memmove(ptr, items, len * item_size);
+            
+            return ptr;
+
+        }
+        else // WARN(bcall): memory allocation fails hiddenly... 
+        {
+            return items;
+        }
+    }
 }
 
