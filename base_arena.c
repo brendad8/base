@@ -1,6 +1,4 @@
 
-// #include <stdio.h>
-
 #include "base_core.h"
 #include "base_arena.h"
 #include "base_vmemory.c"
@@ -45,15 +43,18 @@ void arena_release(Arena* arena)
 }
 
 /*********************************************************************************/
-// static uint64 ArenaGetPos(Arena* arena)
-// {
-//     // needed if we make getting pos more complex with chaining...
-//     return arena->pos;
-// }
+uint64_t arena_get_pos(Arena* arena)
+{
+    while (arena->next != NULL)
+        arena = arena->next;
+    
+    return arena->pos;
+}
 
 /*********************************************************************************/
 static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool32 zero)
 {
+    // traverse to current newest arena
     while (arena->next != NULL)
         arena = arena->next;
 
@@ -62,7 +63,7 @@ static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool32
 
     if (new_pos_end > arena->committed)
     {
-        // commit enough memory to fit new allocation and be aligned with os commit size
+        // NOTE(bcall): commit enough memory to fit new allocation and be aligned with os commit size
         uint64_t commit_size = ALIGN_UP_POW2(new_pos_end, arena->params.commit_size) - arena->committed;
 
         // TODO(bcall): check free list..
