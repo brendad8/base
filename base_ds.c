@@ -7,20 +7,12 @@
 /*********************************************************************************/
 void* array_grow_arena(Arena* arena, void* items, uint64_t item_size, uint64_t count)
 {
-    ArrayHeader* header;
-    uint64_t len = 0;
-    uint64_t cap = 0;
-    
     void* new_ptr;
     uint64_t new_len;
     uint64_t new_cap;
 
-    if (items != NULL)
-    {
-        header = ((ArrayHeader*)items - 1);
-        len = header->len;
-        cap = header->cap;
-    }
+    uint64_t len = ARRAY_LEN(items);
+    uint64_t cap = ARRAY_CAP(items);
 
     new_len = len + count;
     if (new_len < cap)
@@ -49,13 +41,13 @@ void* array_grow_arena(Arena* arena, void* items, uint64_t item_size, uint64_t c
         }
     }
     // NOTE(bcall): Array has room to grow in arena without relocating it...
-    else if ((uint64_t)(arena->base + arena->pos) == (uint64_t)items + header->cap*item_size)
+    else if ((uint64_t)(arena->base + arena->pos) == (uint64_t)items + cap*item_size)
     {
         // NOTE(bcall): since array is not moving we allocate space for diff in new vs old capacity
-        void* ptr = arena_push(arena, (new_cap - header->cap) * item_size);
+        void* ptr = arena_push(arena, (new_cap - cap) * item_size);
         if (ptr)
         {
-            header->cap = new_cap;
+            ARRAY_HEADER_CAST(items)->cap = new_cap;
             return items;
         }
         else // WARN(bcall): memory allocation fails hiddenly... 
@@ -73,7 +65,7 @@ void* array_grow_arena(Arena* arena, void* items, uint64_t item_size, uint64_t c
             hdr->cap = new_cap;
 
             ptr = (void*)(hdr + 1);
-            memmove(ptr, items, header->len * item_size);
+            memmove(ptr, items, len * item_size);
             
             // TODO(bcall): free prev items pointer if arena has free list...
             return ptr;
@@ -89,20 +81,12 @@ void* array_grow_arena(Arena* arena, void* items, uint64_t item_size, uint64_t c
 
 void* array_grow_heap(void* items, uint64_t item_size, uint64_t count)
 {
-    ArrayHeader* header;
-    uint64_t len = 0;
-    uint64_t cap = 0;
-    
     void* new_ptr;
     uint64_t new_len;
     uint64_t new_cap;
 
-    if (items != NULL)
-    {
-        header = ((ArrayHeader*)items - 1);
-        len = header->len;
-        cap = header->cap;
-    }
+    uint64_t len = ARRAY_LEN(items);
+    uint64_t cap = ARRAY_CAP(items);
 
     new_len = len + count;
     if (new_len < cap)
