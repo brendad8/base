@@ -126,6 +126,10 @@ struct ArrayHeader
 #define ARRAY_LEN(a)                    (ARRAY_HEADER_CAST((a))->len)
 #define ARRAY_CAP(a)                    (ARRAY_HEADER_CAST((a))->cap)
 
+// TODO(bcall): reserve n additional or reserve cap of n...
+#define ARRAY_RESERVE(arena, a, n)      ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), (n)))
+#define ARRAY_SET_CAP(arena, a, cap)    void     
+
 #define ARRAY_PUSH(arena, a, item)      ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), 1), (a)[ARRAY_LEN(a)++] = (item))
 #define ARRAY_ADD(arena, a)             ARRAY_ADD_N((arena), (a), 1) 
 #define ARRAY_ADD_N(arena, a, n)        ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), (n)), ARRAY_LEN(a) += (n), &(a)[ARRAY_LEN(a) - (n)])
@@ -137,7 +141,6 @@ struct ArrayHeader
 #define ARRAY_REMOVE_N(a, i, n)         ((i) + (n) < ARRAY_LEN(a) ? memmove(&(a)[i], &(a)[(i)+(n)], ARRAY_ITEM_SIZE(a) * (ARRAY_LEN(a)-(n)-(i))), ARRAY_LEN(a) -= (n) : 0)
 #define ARRAY_REMOVE_SWAP(a,i)          ((i) < ARRAY_LEN(a) ? (a)[i] = (a)[ARRAY_LEN(a)-1], ARRAY_LEN(a)-- : 0)
 
-#define ARRAY_RESERVE(arena, a, n)      ((a) = array_grow((arena), (a), ARRAY_ITEM_SIZE(a), (n)))
 #define ARRAY_CLEAR(a)                  (ARRAY_LEN(a) = 0)
 #define ARRAY_CLEAR_ZERO(a)             (memset((a), 0, ARRAY_ITEM_SIZE(a)*ARRAY_LEN(a)), ARRAY_LEN(a) = 0)
 
