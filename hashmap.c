@@ -1,5 +1,118 @@
 
+#include <stdlib.h>
+#include "base_core.h"
 
+size_t hash_string(char *str, size_t seed);
+size_t hash_bytes(void *p, size_t len, size_t seed);
+
+// HashMap Structure
+// [--------------------MEMORY---------------------]
+// [ HashMapHeader ] [ type[n] ] [ HashMapEntry[n] ]
+//                ^ map object pointer of type*
+#define HMAP_GROW_THRESHOLD      12/16
+#define HMAP_TOMBSTONE_THRESHOLD  3/16
+#define HMAP_SHRINK_THRESHOLD     4/16
+
+typedef struct HashMapEntry HashMapEntry;
+struct HashMapEntry
+{
+    size_t hash;
+    size_t idx;
+};
+
+typedef struct HashMapHeader HashMapHeader;
+struct HashMapHeader
+{
+    size_t len;       // hashmap len
+    size_t cap;       // hashmap capacity 
+    size_t ts_count;  // tombstone count
+};
+
+#define HMAP_HEADER_CAST(m) (((HashMapHeader*)(m))-1)
+#define HMAP_LEN(m)         ((m) ? HMAP_HEADER_CAST((m))->len : 0) 
+#define HMAP_CAP(m)         ((m) ? HMAP_HEADER_CAST((m))->cap : 0) 
+
+// #define HMAP_RESERVE(m, n)
+// #define HMAP_DEFAULT(m, val)
+// #define HMAP_CLEAR(m)
+
+// #define HMAP_PUT(m, k, val)
+// #define HMAP_GET(m, type, k)
+// #define HMAP_TRY_GET(m, k, out_val)
+// #define HMAP_GETS(m, type, k)
+// #define HMAP_GET_PTR(m, k)
+// #define HMAP_GET_PTR_NULL(m, k)
+// #define HMAP_DEL(scratch, m, k)
+
+// void*  array_grow_arena  (Arena* arena, void* items, uint64_t item_size, uint64_t count);
+// void*  array_grow_heap   (void* items, uint64_t item_size, uint64_t count);
+
+void hmap_rehash_entries(void* map, void* new_map, size_t new_cap)
+{
+    return;
+}
+
+void* hmap_grow_heap(void* map, size_t item_size, size_t count)
+{
+    void* new_ptr;
+    size_t new_len;
+    size_t new_cap;
+
+    size_t len = HMAP_LEN(map);
+    size_t cap = HMAP_CAP(map);
+
+    new_len = len + count;
+    if (new_len < cap)
+        return map;
+
+    if (new_len < 2 * cap)
+        new_cap = 2 * cap;
+    else if (new_len < 4)
+        new_cap = 4;
+    else
+        new_cap = (uint64_t)(3 * new_len / 2);
+
+    if (map == NULL)
+    {
+        void* ptr = malloc(sizeof(HashMapHeader) + (new_cap * item_size) + (new_cap * sizeof(HashMapEntry)));
+        if (ptr)
+        {
+            HashMapHeader* hdr = (HashMapHeader*)ptr;
+            hdr->cap = new_cap;
+            hdr->len = 0;
+            hdr->ts_count = 0;
+            return (void*)(hdr + 1);
+        }
+        else // WARN(bcall): memory allocation fails hiddenly... 
+        {
+            return map; 
+        }
+    }
+    else
+    {
+        void* new_map = malloc(sizeof(HashMapHeader) + (new_cap * item_size) + (new_cap * sizeof(HashMapEntry)));
+        if (new_map)
+        {
+            // will need to rehash entries by iterating
+            // over items in map and inserting in new_entries 
+            // with links to idx in map
+            hmap_rehash_entries(map, new_map, new_cap);
+            
+            HashMapHeader* hdr = (HashMapHeader*)new_map;
+            hdr->cap = new_cap;
+            hdr->len = len;
+            hdr->ts_count = 0;
+
+            free(map);
+            return new_map;
+
+        }
+        else // WARN(bcall): memory allocation fails hiddenly... 
+        {
+            return map;
+        }
+    }
+}
 
 #define SIZE_T_BITS           ((sizeof (size_t)) * 8)
 
@@ -11,76 +124,72 @@
 
 size_t hash_string(char *str, size_t seed)
 {
-  size_t hash = seed;
-  while (*str)
-     hash = ROTATE_LEFT(hash, 9) + (unsigned char) *str++;
+    size_t hash = seed;
+    while (*str)
+        hash = ROTATE_LEFT(hash, 9) + (unsigned char) *str++;
 
-  // Thomas Wang 64-to-32 bit mix function, hopefully also works in 32 bits
-  hash ^= seed;
-  hash = (~hash) + (hash << 18);
-  hash ^= hash ^ ROTATE_RIGHT(hash,31);
-  hash = hash * 21;
-  hash ^= hash ^ ROTATE_RIGHT(hash,11);
-  hash += (hash << 6);
-  hash ^= ROTATE_RIGHT(hash,22);
-  return hash+seed;
+    // Thomas Wang 64-to-32 bit mix function, hopefully also works in 32 bits
+    hash ^= seed;
+    hash = (~hash) + (hash << 18);
+    hash ^= hash ^ ROTATE_RIGHT(hash,31);
+    hash = hash * 21;
+    hash ^= hash ^ ROTATE_RIGHT(hash,11);
+    hash += (hash << 6);
+    hash ^= ROTATE_RIGHT(hash,22);
+    return hash+seed;
 }
 
 static size_t siphash_bytes(void *p, size_t len, size_t seed)
 {
-  unsigned char *d = (unsigned char *) p;
-  size_t i,j;
-  size_t v0,v1,v2,v3, data;
+    unsigned char *d = (unsigned char *) p;
+    size_t i,j;
+    size_t v0,v1,v2,v3, data;
 
-  // hash that works on 32- or 64-bit registers without knowing which we have
-  // (computes different results on 32-bit and 64-bit platform)
-  // derived from siphash, but on 32-bit platforms very different as it uses 4 32-bit state not 4 64-bit
-  v0 = ((((size_t) 0x736f6d65 << 16) << 16) + 0x70736575) ^  seed;
-  v1 = ((((size_t) 0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
-  v2 = ((((size_t) 0x6c796765 << 16) << 16) + 0x6e657261) ^  seed;
-  v3 = ((((size_t) 0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
+    // hash that works on 32- or 64-bit registers without knowing which we have
+    // (computes different results on 32-bit and 64-bit platform)
+    // derived from siphash, but on 32-bit platforms very different as it uses 4 32-bit state not 4 64-bit
+    v0 = ((((size_t) 0x736f6d65 << 16) << 16) + 0x70736575) ^  seed;
+    v1 = ((((size_t) 0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
+    v2 = ((((size_t) 0x6c796765 << 16) << 16) + 0x6e657261) ^  seed;
+    v3 = ((((size_t) 0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
 
-  #define SIPROUND() \
-    do {                   \
-      v0 += v1; v1 = ROTATE_LEFT(v1, 13);  v1 ^= v0; v0 = ROTATE_LEFT(v0,SIZE_T_BITS/2); \
-      v2 += v3; v3 = ROTATE_LEFT(v3, 16);  v3 ^= v2;                                     \
-      v2 += v1; v1 = ROTATE_LEFT(v1, 17);  v1 ^= v2; v2 = ROTATE_LEFT(v2,SIZE_T_BITS/2); \
-      v0 += v3; v3 = ROTATE_LEFT(v3, 21);  v3 ^= v0;                                     \
-    } while (0)
+    #define SIPROUND() \
+        do { \
+            v0 += v1; v1 = ROTATE_LEFT(v1, 13);  v1 ^= v0; v0 = ROTATE_LEFT(v0,SIZE_T_BITS/2); \
+            v2 += v3; v3 = ROTATE_LEFT(v3, 16);  v3 ^= v2;                                     \
+            v2 += v1; v1 = ROTATE_LEFT(v1, 17);  v1 ^= v2; v2 = ROTATE_LEFT(v2,SIZE_T_BITS/2); \
+            v0 += v3; v3 = ROTATE_LEFT(v3, 21);  v3 ^= v0;                                     \
+        } while (0)
 
-  for (i=0; i+sizeof(size_t) <= len; i += sizeof(size_t), d += sizeof(size_t)) {
-    data = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
-    data |= (size_t) (d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24)) << 16 << 16; // discarded if size_t == 4
+    for (i=0; i+sizeof(size_t) <= len; i += sizeof(size_t), d += sizeof(size_t)) {
+        data = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+        data |= (size_t) (d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24)) << 16 << 16; // discarded if size_t == 4
 
+        v3 ^= data;
+        for (j=0; j < SIPHASH_C_ROUNDS; ++j)
+            SIPROUND();
+        v0 ^= data;
+    }
+    data = len << (SIZE_T_BITS-8);
+    switch (len - i) {
+        case 7: data |= ((size_t) d[6] << 24) << 24; // fall through
+        case 6: data |= ((size_t) d[5] << 20) << 20; // fall through
+        case 5: data |= ((size_t) d[4] << 16) << 16; // fall through
+        case 4: data |= (d[3] << 24); // fall through
+        case 3: data |= (d[2] << 16); // fall through
+        case 2: data |= (d[1] << 8); // fall through
+        case 1: data |= d[0]; // fall through
+        case 0: break;
+    }
     v3 ^= data;
     for (j=0; j < SIPHASH_C_ROUNDS; ++j)
-      SIPROUND();
+        SIPROUND();
     v0 ^= data;
-  }
-  data = len << (SIZE_T_BITS-8);
-  switch (len - i) {
-    case 7: data |= ((size_t) d[6] << 24) << 24; // fall through
-    case 6: data |= ((size_t) d[5] << 20) << 20; // fall through
-    case 5: data |= ((size_t) d[4] << 16) << 16; // fall through
-    case 4: data |= (d[3] << 24); // fall through
-    case 3: data |= (d[2] << 16); // fall through
-    case 2: data |= (d[1] << 8); // fall through
-    case 1: data |= d[0]; // fall through
-    case 0: break;
-  }
-  v3 ^= data;
-  for (j=0; j < SIPHASH_C_ROUNDS; ++j)
-    SIPROUND();
-  v0 ^= data;
-  v2 ^= 0xff;
-  for (j=0; j < SIPHASH_D_ROUNDS; ++j)
-    SIPROUND();
+    v2 ^= 0xff;
+    for (j=0; j < SIPHASH_D_ROUNDS; ++j)
+        SIPROUND();
 
-#ifdef STBDS_SIPHASH_2_4
-  return v0^v1^v2^v3;
-#else
-  return v1^v2^v3;
-#endif
+    return v1^v2^v3;
 }
 
 
@@ -163,26 +272,6 @@ size_t hash_bytes(void *p, size_t len, size_t seed)
   }
 }
 
-
-
-// typedef struct HashMapEntry HashMapEntry;
-// struct HashMapEntry 
-// {
-//     uint64_t hash;
-//     uint64_t idx;
-// };
-//
-// typedef struct HashMapHeader HashMapHeader;
-// struct HashMapHeader
-// {
-//     uint64_t len;
-//     uint64_t cap;
-//     uint64_t insertIndex;
-//     uint64_t usedCountThreshold;
-//     uint64_t deletedCount;
-//     uint64_t deletedCountThreshold;
-//     HashMapEntry* table;
-// };
 
 int main(void)
 {
