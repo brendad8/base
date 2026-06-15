@@ -2,35 +2,58 @@
 #include <stdlib.h>
 #include "base_core.h"
 
-size_t hash_string(char *str, size_t seed);
-size_t hash_bytes(void *p, size_t len, size_t seed);
 
-// HashMap Structure
+// HashMap Structure:
+//
 // [--------------------MEMORY---------------------]
 // [ HashMapHeader ] [ type[n] ] [ HashMapEntry[n] ]
 //                ^ map object pointer of type*
-#define HMAP_GROW_THRESHOLD      12/16
-#define HMAP_TOMBSTONE_THRESHOLD  3/16
-#define HMAP_SHRINK_THRESHOLD     4/16
 
-typedef struct HashMapEntry HashMapEntry;
-struct HashMapEntry
+
+#define MAP_GROW_THRESHOLD      12/16
+#define MAP_TOMBSTONE_THRESHOLD  3/16
+#define MAP_SHRINK_THRESHOLD     4/16
+
+typedef enum
 {
-    size_t hash;
-    size_t idx;
+    MAP_ENTRY_FREE  = 0,
+    MAP_ENTRY_TOMB  = 1,
+    MAP_ENTRY_TAKEN = 2
+
+} MapEntryState;
+
+typedef struct MapEntry MapEntry;
+struct MapEntry
+{
+    size_t   hash;
+    uint32_t idx;
+    MapEntryState state;
 };
 
-typedef struct HashMapHeader HashMapHeader;
-struct HashMapHeader
+typedef struct MapHeader MapHeader;
+struct MapHeader
 {
     size_t len;       // hashmap len
     size_t cap;       // hashmap capacity 
     size_t ts_count;  // tombstone count
 };
 
-#define HMAP_HEADER_CAST(m) (((HashMapHeader*)(m))-1)
-#define HMAP_LEN(m)         ((m) ? HMAP_HEADER_CAST((m))->len : 0) 
-#define HMAP_CAP(m)         ((m) ? HMAP_HEADER_CAST((m))->cap : 0) 
+size_t hash_string(char *str, size_t seed);
+size_t hash_bytes(void *p, size_t len, size_t seed);
+
+void   hmap_insert(MapEntry* entries, size_t cap, size_t hash, size_t idx);
+void   hmap_rehash_entries(void* map, void* new_map, size_t new_cap, size_t item_size, size_t key_size);
+
+#define HMAP_HEADER_CAST(m)  (((MapHeader*)((m)-1))-1)
+#define HMAP_LEN(m)          ((m) ? HMAP_HEADER_CAST((m))->len : 0) 
+#define HMAP_CAP(m)          ((m) ? HMAP_HEADER_CAST((m))->cap : 0) 
+#define HMAP_ITEM_SIZE(a)    (sizeof(*(a)))
+#define HMAP_KEY_SIZE(a)     (sizeof((a)->key))
+
+#define HMAP_ENTRIES_CAST(m) ((MapEntry*)((m)+(HMAP_ITEM_SIZE((m))*HMAP_CAP((m)))))
+
+#define HMAP_SEED 822
+
 
 // #define HMAP_RESERVE(m, n)
 // #define HMAP_DEFAULT(m, val)
@@ -47,12 +70,40 @@ struct HashMapHeader
 // void*  array_grow_arena  (Arena* arena, void* items, uint64_t item_size, uint64_t count);
 // void*  array_grow_heap   (void* items, uint64_t item_size, uint64_t count);
 
-void hmap_rehash_entries(void* map, void* new_map, size_t new_cap)
+void hmap_insert(MapEntry* entries, size_t cap, size_t hash, size_t idx)
 {
-    return;
+    size_t entry_idx  = hash % cap;
+    size_t entry_hash = entries[entry_idx].hash;
+    MapEntryState entry_state = entries[entry_idx].state;
+
+    while (entry_hash != hash || entry_state == MAP_ENTRY_FREE)
+    {
+        entry_idx = (entry_idx + 1) % cap; // linear probing...
+        entry_hash = entries[entry_idx].hash;
+        entry_state = entries[entry_idx].state;
+    }
+
+    MapEntry* new_entry = &entries[entry_idx];
+    new_entry->hash  = hash;
+    new_entry->idx   = idx;
+    new_entry->state = MAP_ENTRY_TAKEN;
 }
 
-void* hmap_grow_heap(void* map, size_t item_size, size_t count)
+
+void hmap_rehash_entries(void* map, void* new_map, size_t new_cap, size_t item_size, size_t key_size)
+{
+    size_t old_len = HMAP_LEN(map);
+    MapEntry* new_entries = HMAP_ENTRIES_CAST(new_map);
+
+    for (size_t i = 0; i < old_len; i++)
+    {
+        uint8_t* key_ptr = ((uint8_t*)map + item_size * i);
+        size_t hash = hash_bytes(key_ptr, key_size, HMAP_SEED);
+        hmap_insert(new_entries, new_cap, hash, i);
+    }
+}
+
+void* hmap_grow_heap(void* map, size_t item_size, size_t key_size, size_t count)
 {
     void* new_ptr;
     size_t new_len;
@@ -74,14 +125,14 @@ void* hmap_grow_heap(void* map, size_t item_size, size_t count)
 
     if (map == NULL)
     {
-        void* ptr = malloc(sizeof(HashMapHeader) + (new_cap * item_size) + (new_cap * sizeof(HashMapEntry)));
+        void* ptr = malloc(sizeof(MapHeader) + ((new_cap + 1) * item_size) + (new_cap * sizeof(MapEntry)));
         if (ptr)
         {
-            HashMapHeader* hdr = (HashMapHeader*)ptr;
+            MapHeader* hdr = (MapHeader*)ptr;
             hdr->cap = new_cap;
             hdr->len = 0;
             hdr->ts_count = 0;
-            return (void*)(hdr + 1);
+            return (void*)(hdr + 2); // leave space for map[-1] to store default value...
         }
         else // WARN(bcall): memory allocation fails hiddenly... 
         {
@@ -90,13 +141,13 @@ void* hmap_grow_heap(void* map, size_t item_size, size_t count)
     }
     else
     {
-        void* new_map = malloc(sizeof(HashMapHeader) + (new_cap * item_size) + (new_cap * sizeof(HashMapEntry)));
+        void* new_map = malloc(sizeof(MapHeader) + (new_cap * item_size) + (new_cap * sizeof(MapEntry)));
         if (new_map)
         {
-            // will need to rehash entries by iterating
-            // over items in map and inserting in new_entries 
-            // with links to idx in map
-            hmap_rehash_entries(map, new_map, new_cap);
+            hmap_rehash_entries(map, new_map, new_cap, item_size, key_size);
+
+
+            memmove(new_map, ((uint8)map-item_size))
             
             HashMapHeader* hdr = (HashMapHeader*)new_map;
             hdr->cap = new_cap;
