@@ -10,36 +10,6 @@
 #include "base_arena.h"
 
 //***************************************************************************
-//          TYPES
-//***************************************************************************
-
-typedef struct ArrayHeader ArrayHeader;
-struct ArrayHeader
-{
-    uint64_t len;
-    uint64_t cap;
-};
-
-// typedef struct HashMapEntry HashMapEntry;
-// struct HashMapEntry 
-// {
-//     uint64_t hash;
-//     uint64_t idx;
-// };
-//
-// typedef struct HashMapHeader HashMapHeader;
-// struct HashMapHeader
-// {
-//     uint64_t len;
-//     uint64_t cap;
-//     uint64_t insertIndex;
-//     uint64_t usedCountThreshold;
-//     uint64_t deletedCount;
-//     uint64_t deletedCountThreshold;
-//     HashMapEntry* table;
-// };
-
-//***************************************************************************
 //          MACROS
 //***************************************************************************
 
@@ -57,9 +27,13 @@ struct ArrayHeader
 
 #define STACK_POP(first) STACK_POP_N(first, next)
 
+
 //*******************
 // QUEUE
 //*******************
+
+#define QUEUE_PUSH(first, last, node)    QUEUE_PUSH_N(first, last, node, next)
+#define QUEUE_POP(first, last)           QUEUE_POP_N(first, last, next) 
 
 #define QUEUE_PUSH_N(first, last, node, next)                       \
     ((first) == NULL ?                                              \
@@ -71,12 +45,18 @@ struct ArrayHeader
     (first) = (last) = NULL :                                       \
     ((first) = (first)->next))
 
-#define QUEUE_PUSH(first, last, node) QUEUE_PUSH_N(first, last, node, next)
-#define QUEUE_POP(first, last) QUEUE_POP_N(first, last, next) 
 
 //*******************
 // DOUBLY-LINKED LIST
 //*******************
+
+#define DLL_PUSH_BACK(first, last, node)                  DLL_PUSH_BACK_NP(first, last, node, next, prev)
+#define DLL_PUSH_FRONT(first, last, node)                 DLL_PUSH_FRONT_NP(first, last, node, next, prev)
+#define DLL_INSERT_AFTER(first, last, ref_node, node)     DLL_INSERT_AFTER_NP(first, last, ref_node, node, next, prev)
+#define DLL_INSERT_BEFORE(first, last, ref_node, node)    DLL_INSERT_BEFORE_NP(first, last, ref_node, node, next, prev)
+#define DLL_REMOVE(first, last, node)                     DLL_REMOVE_NP(first, last, node, next, prev)
+#define DLL_REMOVE_FIRST(first, last)                     DLL_REMOVE_FIRST_NP(first, last, next, prev)
+#define DLL_REMOVE_LAST(first, last)                      DLL_REMOVE_LAST_NP(first, last, next, prev)
 
 #define DLL_PUSH_BACK_NP(first, last, node, next, prev)                                   \
     ((first) == NULL ?                                                                    \
@@ -109,17 +89,17 @@ struct ArrayHeader
     DLL_REMOVE_LAST_NP(first, last, next, prev) :                              \
     ((node)->next->prev = (node)->prev, (node)->prev->next = (node)->next))
 
-#define DLL_PUSH_BACK(first, last, node)                DLL_PUSH_BACK_NP(first, last, node, next, prev)
-#define DLL_PUSH_FRONT(first, last, node)               DLL_PUSH_FRONT_NP(first, last, node, next, prev)
-#define DLL_INSERT_AFTER(first, last, ref_node, node)   DLL_INSERT_AFTER_NP(first, last, ref_node, node, next, prev)
-#define DLL_INSERT_BEFORE(first, last, ref_node, node)  DLL_INSERT_BEFORE_NP(first, last, ref_node, node, next, prev)
-#define DLL_REMOVE(first, last, node)                   DLL_REMOVE_NP(first, last, node, next, prev)
-#define DLL_REMOVE_FIRST(first, last)                   DLL_REMOVE_FIRST_NP(first, last, next, prev)
-#define DLL_REMOVE_LAST(first, last)                    DLL_REMOVE_LAST_NP(first, last, next, prev)
 
 //*******************
 // DYNAMIC ARRAY
 //*******************
+
+typedef struct ArrayHeader ArrayHeader;
+struct ArrayHeader
+{
+    uint64_t len;
+    uint64_t cap;
+};
 
 #define ARRAY_HEADER_CAST(a)                  (((ArrayHeader*)(a))-1)
 #define ARRAY_ITEM_SIZE(a)                    (sizeof(*(a)))
@@ -168,6 +148,17 @@ struct ArrayHeader
 // Hash Map
 //************************
 
+#define HMAP_GROW_THRESHOLD      12/16
+#define HMAP_TOMBSTONE_THRESHOLD  3/16
+#define HMAP_SHRINK_THRESHOLD     4/16
+
+typedef struct HashMapHeader HashMapHeader;
+struct HashMapHeader
+{
+    uint64_t len;       // hashmap len
+    uint64_t cap;       // hashmap capacity 
+    uint64_t ts_count;  // tombstone count
+};
 
 // #define HMAP_RESERVE(arena, m, n)
 // #define HMAP_DEFAULT(arena, m, val)
@@ -183,7 +174,6 @@ struct ArrayHeader
 // #define HMAP_GET_PTR(m, k)
 // #define HMAP_GET_PTR_NULL(m, k)
 // #define HMAP_DEL(scratch, m, k)
-
 
 //************************
 // String Hash Map
@@ -208,7 +198,14 @@ struct ArrayHeader
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
-void* array_grow_arena  (Arena* arena, void* items, uint64_t item_size, uint64_t count);
-void* array_grow_heap                 (void* items, uint64_t item_size, uint64_t count);
+void*  array_grow_arena  (Arena* arena, void* items, uint64_t item_size, uint64_t count);
+void*  array_grow_heap   (void* items, uint64_t item_size, uint64_t count);
+
+size_t hash_string(char *str, size_t seed);
+size_t hash_bytes(void *p, size_t len, size_t seed);
 
 #endif // BASE_DATA_STRUCTURES_H
+      
+
+
+
