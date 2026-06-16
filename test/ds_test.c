@@ -2,6 +2,7 @@
 #include "../base_arena.c"
 #include "../base_ds.c"
 #include "../base_test.h"
+#include <stdint.h>
 
 typedef struct Node Node;
 struct Node 
@@ -216,6 +217,55 @@ static void test_dynamic_array_arena(void)
     arena_release(arena);
 }
 
+typedef struct KVPair KVPair;
+struct KVPair
+{
+    int32_t key;
+    uint32_t value;
+};
+
+void test_hashmap(void)
+{
+    printf("%zu\n", ALIGN_OF(MapHeader));
+
+    int32_t key;
+    uint32_t value;
+    KVPair* map = NULL;
+
+    key = 8; value = 0;
+    HMAP_PUT(map, key, value);
+    
+    // key = 22; value = 1;
+    // HMAP_PUT(map, key, value);
+
+    TEST_ASSERT(HMAP_LEN(map) == 2);
+    TEST_ASSERT(HMAP_CAP(map) == 4);
+    
+    // for (uint32_t i = 0; i < HMAP_LEN(map); i++)
+    // {
+    //     TEST_ASSERT(map[i].value == i); 
+    // }
+    
+    // key = 56; value = 5;
+    // HMAP_PUT(map, key, value);
+    //
+    // key = 91; value = 4;
+    // HMAP_PUT(map, key, value);
+    //
+    // key = 56; value = 3;
+    // HMAP_PUT(map, key, value);
+    //
+    // TEST_ASSERT(HMAP_LEN(map) == 4);
+    // TEST_ASSERT(HMAP_CAP(map) == 8);
+    //
+    // for (uint32_t i = 0; i < HMAP_LEN(map); i++)
+    // {
+    //     TEST_ASSERT(map[i].value == i); 
+    // }
+    //
+    // TEST_ASSERT(HMAP_LEN(map) == 3);
+    // TEST_ASSERT(HMAP_CAP(map) == 8);
+}
 
 int main(void)
 {
@@ -224,6 +274,7 @@ int main(void)
     test_doubly_linked_list();
     test_dynamic_array_heap();
     test_dynamic_array_arena();
+    test_hashmap();
 
     test_print_results("Data Structure");
 

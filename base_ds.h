@@ -148,17 +148,57 @@ struct ArrayHeader
 // Hash Map
 //************************
 
-#define HMAP_GROW_THRESHOLD      12/16
-#define HMAP_TOMBSTONE_THRESHOLD  3/16
-#define HMAP_SHRINK_THRESHOLD     4/16
+static const float map_grow_threshold      = 0.75f; // 12/16
+static const float map_tombstone_threshold = 0.19f; //  3/16
+static const float map_shrink_threshold    = 0.25f; //  4/16
 
-typedef struct HashMapHeader HashMapHeader;
-struct HashMapHeader
+typedef enum
 {
-    uint64_t len;       // hashmap len
-    uint64_t cap;       // hashmap capacity 
-    uint64_t ts_count;  // tombstone count
+    MAP_ENTRY_FREE  = 0,
+    MAP_ENTRY_TOMB  = 1,
+    MAP_ENTRY_TAKEN = 2
+
+} MapEntryState;
+
+typedef struct MapEntry MapEntry;
+struct MapEntry
+{
+    size_t   hash;
+    uint32_t idx;
+    MapEntryState state;
 };
+
+typedef struct MapHeader MapHeader;
+struct MapHeader
+{
+    size_t len;       // hashmap len
+    size_t cap;       // hashmap capacity 
+    size_t ts_count;  // tombstone count
+    size_t offset;    // 
+};
+
+#define HMAP_HEADER_CAST(m)   ((MapHeader *)((uint8_t *)(m) - (HMAP_ITEM_SIZE(m)) - sizeof(MapHeader)))
+#define HMAP_LEN(m)           ((m) ? HMAP_HEADER_CAST((m))->len : 0) 
+#define HMAP_CAP(m)           ((m) ? HMAP_HEADER_CAST((m))->cap : 0) 
+#define HMAP_ITEM_SIZE(m)     (sizeof(*(m)))
+#define HMAP_KEY_SIZE(m)      (sizeof((m)->key))
+#define HMAP_ENTRIES_CAST(m)  ((MapEntry*)((m)+(HMAP_ITEM_SIZE((m))*HMAP_CAP((m)))))
+
+// #define HMAP_HEADER_CAST(m)   (((MapHeader*)((m)-1))-1)
+
+#define HMAP_SEED 822
+
+// #define HMAP_RESERVE(m, n)
+// #define HMAP_DEFAULT(m, val)
+// #define HMAP_CLEAR(m)
+
+#define HMAP_PUT(m, k, val) \
+    do { \
+        (m) = hmap_grow_heap((m), HMAP_ITEM_SIZE(m), HMAP_KEY_SIZE(m), 1); \
+        size_t _idx = hmap_insert((m), &(k), HMAP_KEY_SIZE(m), HMAP_SEED); \
+        m[_idx].key   = k; \
+        m[_idx].value = val; \
+    } while(0)
 
 // #define HMAP_RESERVE(arena, m, n)
 // #define HMAP_DEFAULT(arena, m, val)
@@ -198,11 +238,12 @@ struct HashMapHeader
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
-void*  array_grow_arena  (Arena* arena, void* items, uint64_t item_size, uint64_t count);
-void*  array_grow_heap   (void* items, uint64_t item_size, uint64_t count);
+void*   array_grow_arena     (Arena* arena, void* items, uint64_t item_size, uint64_t count);
+void*   array_grow_heap      (void* items, uint64_t item_size, uint64_t count);
 
-size_t hash_string(char *str, size_t seed);
-size_t hash_bytes(void *p, size_t len, size_t seed);
+size_t  hmap_insert          (void* map, void* key_ptr, size_t key_size, int32_t seed);
+void    hmap_rehash_entries  (void* map, void* new_map, size_t new_cap, size_t item_size, size_t key_size);
+void*   hmap_grow_heap       (void* map, size_t item_size, size_t key_size, size_t count);
 
 #endif // BASE_DATA_STRUCTURES_H
       
