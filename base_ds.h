@@ -1,4 +1,12 @@
 
+// stb_ds.h - v0.67 - public domain data structures - Sean Barrett 2019
+//
+// This is a single-header-file library that provides easy-to-use
+// dynamic arrays and hash tables for C (also works in C++).
+
+// Modified to use different API with slightly different names and
+// macros that use all caps convention by Brendan Callender
+
 #ifndef BASE_DATA_STRUCTURES_H
 #define BASE_DATA_STRUCTURES_H
 
@@ -7,7 +15,6 @@
 //***************************************************************************
 
 #include "base_core.h"
-#include "base_arena.h"
 
 #define STBDS_NO_SHORT_NAMES
 #include "deps/stb_ds.h"

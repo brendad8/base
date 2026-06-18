@@ -9,11 +9,9 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
-// Implementation adapted by Brendan Callender
-// 
 // Modified to add implementations for uniform, 
 // normal, exponential, poisson, bernoulli, and 
-// binomial distributions
+// binomial distributions by Brendan Callender
 
 
 #ifndef BASE_RAND_H
