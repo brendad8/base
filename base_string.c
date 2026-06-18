@@ -1,11 +1,12 @@
 
+#include <stdarg.h>
+
 #include "base_string.h"
 #include "base_arena.h"
 #include "base_ds.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-
+#define STB_SPRINTF_IMPLEMENTATION
+#include "deps/stb_sprintf.h"
 
 /*********************************************************************************/
 string str_new(char* ptr, size_t len) 
@@ -197,10 +198,10 @@ string str_printfv(Arena *arena, char* fmt, va_list args)
 {
     va_list args2;
     va_copy(args2, args);
-    uint32_t needed_bytes = vsnprintf(0, 0, fmt, args) + 1;
+    uint32_t needed_bytes = stbsp_vsnprintf(0, 0, fmt, args) + 1;
     string result = {0};
     result.ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, needed_bytes);
-    result.len = vsnprintf((char*)result.ptr, needed_bytes, fmt, args2);
+    result.len = stbsp_vsnprintf((char*)result.ptr, needed_bytes, fmt, args2);
     result.ptr[result.len] = 0;
     va_end(args2);
     return result;
