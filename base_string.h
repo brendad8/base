@@ -18,7 +18,7 @@ typedef struct string string;
 struct string 
 { 
     char* ptr; 
-    uint64_t len; 
+    size_t len; 
 };
 
 typedef struct StringNode StringNode;
@@ -33,8 +33,8 @@ struct StringList
 {
     StringNode* first;
     StringNode* last;
-    uint64_t node_count;
-    // uint64_t total_size;
+    size_t node_count;
+    // size_t total_size;
 };
 
 //***************************************************************************
@@ -48,7 +48,7 @@ struct StringList
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
-string      str_new                (char* ptr, uint64_t len);
+string      str_new                (char* ptr, size_t len);
 string      str_from_cstr          (char* ptr);
 
 bool32      str_equal              (string a, string b);
@@ -61,8 +61,8 @@ bool32      str_ends_with          (string s, string suffix);
 int32_t     str_find_idx_first     (string s, string pattern);
 int32_t     str_find_idx_last      (string s, string pattern);
 
-string      str_slice              (string s, uint64_t start, uint64_t end);
-string      str_slice_len          (string s, uint64_t start, uint64_t length);
+string      str_slice              (string s, size_t start, size_t end);
+string      str_slice_len          (string s, size_t start, size_t length);
 
 string      str_remove_prefix      (string s, string prefix);
 string      str_remove_suffix      (string s, string suffix);
@@ -92,7 +92,8 @@ bool32      char_is_digit          (char c, uint32_t base);
 char        char_to_lower          (char c);
 char        char_to_upper          (char c);
 
-uint64_t    cstr_length            (char* c);
+size_t      cstr_length            (char* c);
+
 
 #endif // BASE_STRING_H
 

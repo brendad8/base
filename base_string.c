@@ -8,7 +8,7 @@
 
 
 /*********************************************************************************/
-string str_new(char* ptr, uint64_t len) 
+string str_new(char* ptr, size_t len) 
 {
     string s = { ptr, len };
     return s;
@@ -33,7 +33,7 @@ bool32 str_equal(string a, string b)
 /*********************************************************************************/
 int32_t str_compare(string a, string b) 
 {
-    uint64_t min_len = a.len < b.len ? a.len : b.len;
+    size_t min_len = a.len < b.len ? a.len : b.len;
     int cmp = memcmp(a.ptr, b.ptr, min_len);
 
     return cmp != 0 ? cmp : (int)(a.len - b.len);
@@ -84,7 +84,7 @@ bool32 str_contains(string s, string pattern)
 }
 
 /*********************************************************************************/
-string str_slice(string s, uint64_t start, uint64_t end)
+string str_slice(string s, size_t start, size_t end)
 {
     end = MIN(end, s.len);
     start = MIN(start, end);
@@ -93,7 +93,7 @@ string str_slice(string s, uint64_t start, uint64_t end)
 }
 
 /*********************************************************************************/
-string str_slice_len(string s, uint64_t start, uint64_t length) 
+string str_slice_len(string s, size_t start, size_t length) 
 {
     length = CLAMP_TOP(s.len - start, length);
     return str_new(s.ptr + start, length);
@@ -219,7 +219,7 @@ string str_printf(Arena *arena, char *fmt, ...)
 string str_to_lower(Arena* arena, string s)
 {
     char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len);
-    for (uint64_t i = 0; i < s.len; i++)
+    for (size_t i = 0; i < s.len; i++)
         ptr[i] = char_to_lower(s.ptr[i]);
 
     return str_new(ptr, s.len);
@@ -229,7 +229,7 @@ string str_to_lower(Arena* arena, string s)
 string str_to_upper(Arena* arena, string s)
 {
     char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len);
-    for (uint64_t i = 0; i < s.len; i++)
+    for (size_t i = 0; i < s.len; i++)
         ptr[i] = char_to_upper(s.ptr[i]);
 
     return str_new(ptr, s.len);
@@ -363,7 +363,7 @@ char char_to_upper(char c)
 }
 
 /*********************************************************************************/
-uint64_t cstr_length(char* c)
+size_t cstr_length(char* c)
 {
     size_t len = 0;
     if(c)
