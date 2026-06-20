@@ -52,7 +52,7 @@ uint64_t arena_get_pos(Arena* arena)
 }
 
 /*********************************************************************************/
-static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool32 zero)
+static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool zero)
 {
     // traverse to current newest arena
     while (arena->next != NULL)
@@ -155,6 +155,7 @@ void arena_pop_to(Arena* arena, uint64_t new_pos)
 }
 
 /*********************************************************************************/
+// TODO(bcall): min pop should be to size of arena...
 void arena_pop(Arena* arena, uint64_t size)
 {
     uint64_t pos = arena->pos;

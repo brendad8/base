@@ -1,6 +1,7 @@
 
 #include <stdarg.h>
 
+#include "base_core.h"
 #include "base_string.h"
 #include "base_arena.h"
 #include "base_ds.h"
@@ -23,7 +24,7 @@ string str_from_cstr(char* ptr)
 }
 
 /*********************************************************************************/
-bool32 str_equal(string a, string b) 
+bool str_equal(string a, string b) 
 {
     if (a.len != b.len) 
         return 0;
@@ -32,7 +33,22 @@ bool32 str_equal(string a, string b)
 }
 
 /*********************************************************************************/
-int32_t str_compare(string a, string b) 
+bool str_equal_ci(string a, string b)
+{
+    if (a.len != b.len)
+        return false;
+
+    for (size_t i = 0; i < a.len; i++)
+    {
+        if (char_to_lower(a.ptr[i]) != char_to_lower(b.ptr[i]))
+            return false;
+    }
+
+    return true;
+}
+
+/*********************************************************************************/
+int str_compare(string a, string b) 
 {
     size_t min_len = a.len < b.len ? a.len : b.len;
     int cmp = memcmp(a.ptr, b.ptr, min_len);
@@ -41,14 +57,37 @@ int32_t str_compare(string a, string b)
 }
 
 /*********************************************************************************/
-int32_t str_find_idx_first(string s, string pattern)
+int str_compare_ci(string a, string b)
+{
+    size_t min_len = a.len < b.len ? a.len : b.len;
+
+    for (size_t i = 0; i < min_len; i++)
+    {
+        unsigned char ca = char_to_lower(a.ptr[i]);
+        unsigned char cb = char_to_lower(b.ptr[i]);
+
+        if (ca != cb)
+            return (int)ca - (int)cb;
+    }
+
+    if (a.len < b.len)
+        return -1;
+
+    if (a.len > b.len)
+        return 1;
+
+    return 0;
+}
+
+/*********************************************************************************/
+int str_find_idx_first(string s, string pattern)
 {
     if (s.len < pattern.len || pattern.len == 0) 
         return -1;
 
-    for (int32_t i = 0; i <= (s.len - pattern.len); i++) 
+    for (size_t i = 0; i <= (s.len - pattern.len); i++) 
     {
-        for (int32_t j = 0; j < pattern.len; j++) 
+        for (size_t j = 0; j < pattern.len; j++) 
         {
             if (s.ptr[i+j] != pattern.ptr[j]) 
                 break; 
@@ -60,14 +99,33 @@ int32_t str_find_idx_first(string s, string pattern)
 }
 
 /*********************************************************************************/
-int32_t str_find_idx_last(string s, string pattern)
+int str_find_idx_first_ci(string s, string pattern)
 {
     if (s.len < pattern.len || pattern.len == 0) 
         return -1;
 
-    for (int32_t i = s.len - 1; i >= pattern.len - 1; i--) 
+    for (size_t i = 0; i <= (s.len - pattern.len); i++) 
     {
-        for (int32_t j = 0; j < pattern.len; j++) 
+        for (size_t j = 0; j < pattern.len; j++) 
+        {
+            if (char_to_lower(s.ptr[i+j]) != char_to_lower(pattern.ptr[j])) 
+                break; 
+            if (j == pattern.len-1)
+                return i;
+        }
+    }
+    return -1;
+}
+
+/*********************************************************************************/
+int str_find_idx_last(string s, string pattern)
+{
+    if (s.len < pattern.len || pattern.len == 0) 
+        return -1;
+
+    for (size_t i = s.len - 1; i >= pattern.len - 1; i--) 
+    {
+        for (size_t j = 0; j < pattern.len; j++) 
         {
             if (s.ptr[i-j] != pattern.ptr[pattern.len - j - 1]) 
                 break; 
@@ -79,9 +137,84 @@ int32_t str_find_idx_last(string s, string pattern)
 }
 
 /*********************************************************************************/
-bool32 str_contains(string s, string pattern) 
+int str_find_idx_last_ci(string s, string pattern)
+{
+    if (s.len < pattern.len || pattern.len == 0) 
+        return -1;
+
+    for (size_t i = s.len - 1; i >= pattern.len - 1; i--) 
+    {
+        for (size_t j = 0; j < pattern.len; j++) 
+        {
+            if (char_to_lower(s.ptr[i-j]) != char_to_lower(pattern.ptr[pattern.len - j - 1])) 
+                break; 
+            if (j == pattern.len - 1)
+                return (i - pattern.len + 1);
+        }
+    }
+    return -1;
+}
+
+/*********************************************************************************/
+bool str_contains(string s, string pattern) 
 {
     return str_find_idx_first(s, pattern) != -1;
+}
+
+/*********************************************************************************/
+bool str_contains_ci(string s, string pattern)
+{
+    return str_find_idx_first_ci(s, pattern) != -1;
+}
+
+/*********************************************************************************/
+bool str_starts_with(string s, string prefix) 
+{
+    if (s.len < prefix.len || prefix.len == 0)
+        return 0;
+
+    return memcmp(s.ptr, prefix.ptr, prefix.len) == 0;
+}
+
+/*********************************************************************************/
+bool str_starts_with_ci(string s, string prefix)
+{
+    if (s.len < prefix.len || prefix.len == 0)
+        return false;
+
+    for (size_t i = 0; i < prefix.len; i++)
+    {
+        if (char_to_lower(s.ptr[i]) != char_to_lower(prefix.ptr[i]))
+            return false;
+    }
+
+    return true;
+}
+
+/*********************************************************************************/
+bool str_ends_with(string s, string suffix) 
+{
+    if (s.len < suffix.len || suffix.len == 0)
+        return 0;
+
+    return memcmp(s.ptr + (s.len - suffix.len), suffix.ptr, suffix.len) == 0;
+}
+
+/*********************************************************************************/
+bool str_ends_with_ci(string s, string suffix)
+{
+    if (s.len < suffix.len || suffix.len == 0)
+        return false;
+
+    size_t start = s.len - suffix.len;
+
+    for (size_t i = 0; i < suffix.len; i++)
+    {
+        if (char_to_lower(s.ptr[start + i]) != char_to_lower(suffix.ptr[i]))
+            return false;
+    }
+
+    return true;
 }
 
 /*********************************************************************************/
@@ -100,24 +233,6 @@ string str_slice_len(string s, size_t start, size_t length)
     return str_new(s.ptr + start, length);
 }
 
-
-/*********************************************************************************/
-bool32 str_starts_with(string s, string prefix) 
-{
-    if (s.len < prefix.len || prefix.len == 0)
-        return 0;
-
-    return memcmp(s.ptr, prefix.ptr, prefix.len) == 0;
-}
-
-/*********************************************************************************/
-bool32 str_ends_with(string s, string suffix) 
-{
-    if (s.len < suffix.len || suffix.len == 0)
-        return 0;
-
-    return memcmp(s.ptr + (s.len - suffix.len), suffix.ptr, suffix.len) == 0;
-}
 
 /*********************************************************************************/
 string str_remove_prefix(string s, string prefix)
@@ -303,39 +418,39 @@ StringList str_split_skip_empty(Arena* arena, string s, string delim)
 
 
 /*********************************************************************************/
-bool32 char_is_space(char c)
+bool   char_is_space(char c)
 {
     return (c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\f' || c == '\v');
 }
 
 /*********************************************************************************/
-bool32 char_is_upper(char c)
+bool   char_is_upper(char c)
 {
     return ('A' <= c && c <= 'Z');
 }
 
 /*********************************************************************************/
-bool32 char_is_lower(char c)
+bool   char_is_lower(char c)
 {
     return ('a' <= c && c <= 'z');
 }
 
 /*********************************************************************************/
-bool32 char_is_alpha(char c)
+bool   char_is_alpha(char c)
 {
     return (char_is_upper(c) || char_is_lower(c));
 }
 
 /*********************************************************************************/
-bool32 char_is_slash(char c)
+bool   char_is_slash(char c)
 {
     return (c == '/' || c == '\\');
 }
 
 /*********************************************************************************/
-// bool32 char_is_digit(char c, uint32_t base)
+// bool   char_is_digit(char c, uint32_t base)
 // {
-//     bool32 result = 0;
+//     bool  result = 0;
 //     if (0 < base && base <= 16)
 //     {
 //         char val = integer_symbol_reverse[c];

@@ -10,6 +10,8 @@
 //          INCLUDE_FILES
 //***************************************************************************
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -17,13 +19,7 @@
 //          EXPORTED TYPES
 //***************************************************************************
 
-typedef int8_t     bool8;
-typedef int16_t    bool16;
-typedef int32_t    bool32;
-typedef int64_t    bool64;
 
-typedef float      float32;
-typedef double     float64;
 
 //***************************************************************************
 //          MACROS

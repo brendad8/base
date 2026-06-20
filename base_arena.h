@@ -26,8 +26,8 @@ struct ArenaParams
     uint64_t commit_size;   // size of memory chunks when committing memory from os
     uint64_t reserve_size;  // size of vmemory address space when reserving memory from os
    
-    bool32   growable;      // whether arena will grow when all reserved space is used
-    // bool32 free_list;    // whether arena can free allocations in middle of arena
+    bool     growable;      // whether arena will grow when all reserved space is used
+    // bool   free_list;    // whether arena can free allocations in middle of arena
 };
 
 typedef struct Arena Arena;

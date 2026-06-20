@@ -33,7 +33,7 @@ float     rand_unif    (void);
 float     rand_norm    (float mu, float sigma);
 float     rand_exp     (float lambda);
 uint32_t  rand_pois    (float mu);
-bool32    rand_bern    (float p);
+bool      rand_bern    (float p);
 uint32_t  rand_binom   (uint32_t n, float p);
 
 

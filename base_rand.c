@@ -129,12 +129,12 @@ uint32_t rand_pois(float mu)
 
 
 /********************************************************************************/
-static bool32 prng_rbern_r(prng_state* rng, float p)
+static bool   prng_rbern_r(prng_state* rng, float p)
 {
     return prng_runif_r(&s_prng_state) < p;
 }
 
-bool32 rand_bern(float p)
+bool   rand_bern(float p)
 {
     return prng_rbern_r(&s_prng_state, p);
 }
