@@ -24,7 +24,7 @@ static void test_arena_push(void)
     TEST_ASSERT(arena->committed == KB(8));
 }
 
-static bool32 is_aligned(void* ptr, uint64_t align)
+static bool   is_aligned(void* ptr, uint64_t align)
 {
     return (((uintptr_t)ptr) & (align - 1)) == 0;
 }
