@@ -334,9 +334,10 @@ string str_printf(Arena *arena, char *fmt, ...)
 /*********************************************************************************/
 string str_to_lower(Arena* arena, string s)
 {
-    char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len);
+    char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len + 1);
     for (size_t i = 0; i < s.len; i++)
         ptr[i] = char_to_lower(s.ptr[i]);
+    ptr[s.len] = '\0';
 
     return str_new(ptr, s.len);
 }
@@ -344,9 +345,10 @@ string str_to_lower(Arena* arena, string s)
 /*********************************************************************************/
 string str_to_upper(Arena* arena, string s)
 {
-    char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len);
+    char* ptr = ARENA_PUSH_ARRAY_NO_ZERO(arena, char, s.len + 1);
     for (size_t i = 0; i < s.len; i++)
         ptr[i] = char_to_upper(s.ptr[i]);
+    ptr[s.len] = '\0';
 
     return str_new(ptr, s.len);
 }
