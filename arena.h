@@ -11,19 +11,20 @@
 //          INCLUDE FILES
 //***************************************************************************
 
+#include <stddef.h>
 #include <stdint.h>
 
 //***************************************************************************
 //          TYPES
 //***************************************************************************
 
-typedef struct Arena Arena;
-struct Arena
+typedef struct
 {
     uint64_t pos;      // arena alloc position
     uint64_t cap;      // arena alloc position
     uint8_t* base;     // arena base position
-};
+                       //
+} Arena;
 
 typedef struct 
 {
@@ -51,7 +52,7 @@ typedef struct
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
-ARENA_EXPORT  Arena*    arena_alloc              (size_t capacity);
+ARENA_EXPORT  Arena*    arena_alloc              (uint64_t capacity);
 ARENA_EXPORT  void      arena_release            (Arena* arena);
 
 ARENA_EXPORT  void*     arena_push               (Arena* arena, uint64_t size);
@@ -86,7 +87,7 @@ ARENA_EXPORT  void      arena_temp_end           (ArenaTemp temp);
 static const uint64_t arena_default_alignment = sizeof(void*);
 
 /*********************************************************************************/
-ARENA_EXPORT Arena* arena_alloc(size_t capacity)
+ARENA_EXPORT Arena* arena_alloc(uint64_t capacity)
 {
     void* mem = malloc(sizeof(Arena) + capacity);
     if (mem == NULL) return NULL;
@@ -102,7 +103,8 @@ ARENA_EXPORT Arena* arena_alloc(size_t capacity)
 /*********************************************************************************/
 ARENA_EXPORT void arena_release(Arena* arena)
 {
-    free(arena);
+    if (arena)
+        free(arena);
 }
 
 /*********************************************************************************/
