@@ -1,10 +1,10 @@
 
 
-#ifndef BSC_ARENA_H
-#define BSC_ARENA_H
+#ifndef ARENA_H
+#define ARENA_H
 
-#ifndef BSC_ARENA_EXPORT
-#define BSC_ARENA_EXPORT
+#ifndef ARENA_EXPORT
+#define ARENA_EXPORT
 #endif
 
 //***************************************************************************
@@ -51,28 +51,28 @@ typedef struct
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
-BSC_ARENA_EXPORT  Arena*    arena_alloc              (size_t capacity);
-BSC_ARENA_EXPORT  void      arena_release            (Arena* arena);
+ARENA_EXPORT  Arena*    arena_alloc              (size_t capacity);
+ARENA_EXPORT  void      arena_release            (Arena* arena);
 
-BSC_ARENA_EXPORT  void*     arena_push               (Arena* arena, uint64_t size);
-BSC_ARENA_EXPORT  void*     arena_push_no_zero       (Arena* arena, uint64_t size);
+ARENA_EXPORT  void*     arena_push               (Arena* arena, uint64_t size);
+ARENA_EXPORT  void*     arena_push_no_zero       (Arena* arena, uint64_t size);
 
-BSC_ARENA_EXPORT  void*     arena_push_align         (Arena* arena, uint64_t size, uint64_t align);
-BSC_ARENA_EXPORT  void*     arena_push_align_no_zero (Arena* arena, uint64_t size, uint64_t align);
+ARENA_EXPORT  void*     arena_push_align         (Arena* arena, uint64_t size, uint64_t align);
+ARENA_EXPORT  void*     arena_push_align_no_zero (Arena* arena, uint64_t size, uint64_t align);
 
-BSC_ARENA_EXPORT  void      arena_pop_to             (Arena* arena, uint64_t pos);
-BSC_ARENA_EXPORT  void      arena_pop                (Arena* arena, uint64_t size);
-BSC_ARENA_EXPORT  void      arena_clear              (Arena* arena);
+ARENA_EXPORT  void      arena_pop_to             (Arena* arena, uint64_t pos);
+ARENA_EXPORT  void      arena_pop                (Arena* arena, uint64_t size);
+ARENA_EXPORT  void      arena_clear              (Arena* arena);
 
-BSC_ARENA_EXPORT  ArenaTemp arena_temp_begin         (Arena* arena);
-BSC_ARENA_EXPORT  void      arena_temp_end           (ArenaTemp temp);
+ARENA_EXPORT  ArenaTemp arena_temp_begin         (Arena* arena);
+ARENA_EXPORT  void      arena_temp_end           (ArenaTemp temp);
 
 //***************************************************************************
 //          FUNCTION IMPLEMENTATIONS
 //***************************************************************************
 
-#ifdef BSC_ARENA_IMPLEMENTATION
-#define BSC_ARENA_IMPLEMENTATION
+#ifdef ARENA_IMPLEMENTATION
+#define ARENA_IMPLEMENTATION
 
 #include <stdlib.h>
 #include <string.h>
@@ -86,7 +86,7 @@ BSC_ARENA_EXPORT  void      arena_temp_end           (ArenaTemp temp);
 static const uint64_t arena_default_alignment = sizeof(void*);
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT Arena* arena_alloc(size_t capacity)
+ARENA_EXPORT Arena* arena_alloc(size_t capacity)
 {
     void* mem = malloc(sizeof(Arena) + capacity);
     if (mem == NULL) return NULL;
@@ -100,7 +100,7 @@ BSC_ARENA_EXPORT Arena* arena_alloc(size_t capacity)
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void arena_release(Arena* arena)
+ARENA_EXPORT void arena_release(Arena* arena)
 {
     free(arena);
 }
@@ -122,31 +122,31 @@ static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool z
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void* arena_push(Arena* arena, uint64_t size)
+ARENA_EXPORT void* arena_push(Arena* arena, uint64_t size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 1);
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void* arena_push_no_zero(Arena* arena, uint64_t size)
+ARENA_EXPORT void* arena_push_no_zero(Arena* arena, uint64_t size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 0);
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void* arena_push_align(Arena* arena, uint64_t size, uint64_t align)
+ARENA_EXPORT void* arena_push_align(Arena* arena, uint64_t size, uint64_t align)
 {
     return arena_push_impl(arena, size, align, 1);
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align)
+ARENA_EXPORT void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align)
 {
     return arena_push_impl(arena, size, align, 0);
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void arena_pop_to(Arena* arena, uint64_t new_pos)
+ARENA_EXPORT void arena_pop_to(Arena* arena, uint64_t new_pos)
 {
     uint64_t pos = arena->pos;
     new_pos = ARENA_CLAMP(0, new_pos, pos);
@@ -154,7 +154,7 @@ BSC_ARENA_EXPORT void arena_pop_to(Arena* arena, uint64_t new_pos)
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void arena_pop(Arena* arena, uint64_t size)
+ARENA_EXPORT void arena_pop(Arena* arena, uint64_t size)
 {
     uint64_t pos = arena->pos;
     uint64_t new_pos = pos - size;
@@ -162,20 +162,20 @@ BSC_ARENA_EXPORT void arena_pop(Arena* arena, uint64_t size)
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void arena_clear(Arena* arena)
+ARENA_EXPORT void arena_clear(Arena* arena)
 {
     arena_pop_to(arena, 0);
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT ArenaTemp arena_temp_begin(Arena* arena)
+ARENA_EXPORT ArenaTemp arena_temp_begin(Arena* arena)
 {
     ArenaTemp temp = {arena, arena->pos};
     return temp;
 }
 
 /*********************************************************************************/
-BSC_ARENA_EXPORT void arena_temp_end(ArenaTemp temp)
+ARENA_EXPORT void arena_temp_end(ArenaTemp temp)
 {
     arena_pop_to(temp.arena, temp.pos);
 }
@@ -184,6 +184,6 @@ BSC_ARENA_EXPORT void arena_temp_end(ArenaTemp temp)
 #undef ARENA_ALIGN_UP_POW2
 #undef ARENA_CLAMP
 
-#endif // BSC_ARENA_IMPLEMENTATION
+#endif // ARENA_IMPLEMENTATION
 
-#endif // BSC_ARENA_H
+#endif // ARENA_H
