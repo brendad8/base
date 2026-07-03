@@ -2,6 +2,10 @@
 #ifndef POOL_H
 #define POOL_H
 
+//***************************************************************************
+//          CONFIGURATION OPTIONS
+//***************************************************************************
+
 #ifndef POOL_EXPORT
 #define POOL_EXPORT
 #endif
@@ -25,7 +29,7 @@ struct PoolNode
 
 typedef struct
 {
-    struct PoolNode* free_list;
+    PoolNode* free_list;
     size_t num_used;
     size_t num_free;
     size_t block_size;
@@ -66,7 +70,7 @@ POOL_EXPORT Pool* pool_alloc(size_t block_size, size_t count)
     Pool* pool = (Pool*)malloc(sizeof(Pool) + (block_size * count));
     if (pool == NULL) return NULL;
 
-    pool->free_list  = NULL;
+    pool->free_list = NULL;
     pool->num_used   = 0;
     pool->num_free   = count;
     pool->block_size = block_size;

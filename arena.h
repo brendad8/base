@@ -3,6 +3,10 @@
 #ifndef ARENA_H
 #define ARENA_H
 
+//***************************************************************************
+//          CONFIGURATION OPTIONS
+//***************************************************************************
+
 #ifndef ARENA_EXPORT
 #define ARENA_EXPORT
 #endif
