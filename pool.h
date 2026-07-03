@@ -14,8 +14,8 @@
 //          INCLUDE FILES
 //***************************************************************************
 
-#include <stddef.h>
-#include <stdint.h>
+#include <stddef.h> // for size_t, NULL
+#include <stdint.h> // for uint8_t
 
 //***************************************************************************
 //          TYPES
@@ -54,8 +54,7 @@ POOL_EXPORT  void*   pool_free_block    (Pool* pool, void* block_ptr);
 #ifdef POOL_IMPLEMENTATION
 #define POOL_IMPLEMENTATION
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // for malloc, free
 
 /*********************************************************************************/
 POOL_EXPORT Pool* pool_alloc(size_t block_size, size_t count)

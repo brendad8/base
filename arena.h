@@ -15,8 +15,8 @@
 //          INCLUDE FILES
 //***************************************************************************
 
-#include <stddef.h>
-#include <stdint.h>
+#include <stddef.h> // for NULL
+#include <stdint.h> // for uint64_t
 
 //***************************************************************************
 //          TYPES
@@ -79,8 +79,8 @@ ARENA_EXPORT  void      arena_temp_end           (ArenaTemp temp);
 #ifdef ARENA_IMPLEMENTATION
 #define ARENA_IMPLEMENTATION
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // for malloc, free
+#include <string.h> // for memset
 
 #define ARENA_ALIGN_UP_POW2(x,b) \
     (((x) + (b) - 1)&(~((b) - 1)))
