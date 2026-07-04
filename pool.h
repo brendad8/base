@@ -46,13 +46,11 @@ POOL_EXPORT  void    pool_clear         (Pool* pool);
 POOL_EXPORT  void*   pool_get_block     (Pool* pool);
 POOL_EXPORT  void*   pool_free_block    (Pool* pool, void* block_ptr);
 
-
 //***************************************************************************
 //          FUNCTION IMPLEMENTATIONS
 //***************************************************************************
 
 #ifdef POOL_IMPLEMENTATION
-#define POOL_IMPLEMENTATION
 
 #include <stdlib.h> // for malloc, free
 
