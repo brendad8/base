@@ -72,6 +72,8 @@ ARENA_EXPORT  void      arena_clear              (Arena* arena);
 ARENA_EXPORT  ArenaTemp arena_temp_begin         (Arena* arena);
 ARENA_EXPORT  void      arena_temp_end           (ArenaTemp temp);
 
+#endif // ARENA_H
+       
 //***************************************************************************
 //          FUNCTION IMPLEMENTATIONS
 //***************************************************************************
@@ -191,5 +193,3 @@ ARENA_EXPORT void arena_temp_end(ArenaTemp temp)
 #undef ARENA_CLAMP
 
 #endif // ARENA_IMPLEMENTATION
-
-#endif // ARENA_H
