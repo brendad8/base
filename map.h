@@ -1,13 +1,13 @@
 
 
-#ifndef HASHMAP_H
-#define HASHMAP_H
+#ifndef MAP_H
+#define MAP_H
 
 //***************************************************************************
 //          CONFIGURATION OPTIONS
 //***************************************************************************
 
-#ifdef HMAP_UNIT_TESTS
+#ifdef MAP_UNIT_TESTS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
@@ -28,8 +28,10 @@ extern void     map_rand_seed     (size_t seed);
 extern size_t   map_hash_bytes    (void *p, size_t len, size_t seed);
 extern size_t   map_hash_string   (char *str, size_t seed);
 
-extern char*    smap_arena_alloc    (SMapStringArena *a, char *str);
-extern void     smap_arena_reset    (SMapStringArena *a);
+extern void     map_unit_tests    (void);
+
+extern char*    smap_arena_alloc  (SMapStringArena *a, char *str);
+extern void     smap_arena_reset  (SMapStringArena *a);
 
 //***************************************************************************
 //          HIDDEN
@@ -47,7 +49,7 @@ typedef struct
 typedef struct SMapStringBlock SMapStringBlock;
 struct SMapStringBlock
 {
-    struct smap_string_block *next;
+    SMapStringBlock* next;
     char storage[8];
 };
 
@@ -75,9 +77,8 @@ extern void*   __map_put_default   (void *map, size_t item_size);
 extern void*   __map_put_key       (void *map, size_t item_size, void *key, size_t key_size, int mode);
 extern void*   __map_del_key       (void *map, size_t item_size, void *key, size_t key_size, size_t key_offset, int mode);
 
-extern void*   __smap_mode        (size_t item_size, int mode);
+extern void*   __smap_mode         (size_t item_size, int mode);
 
-extern void    __map_unit_tests    (void);
 
 #ifdef _MSC_VER
 #define __MAP_NOTUSED(v)  (void)(v)
@@ -98,8 +99,21 @@ extern void    __map_unit_tests    (void);
     #endif
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+    #define __MAP_HAS_TYPEOF
+    #ifdef __cplusplus
+        #define __MAP_HAS_LITERAL_ARRAY  // this is currently broken for clang
+    #endif
+#endif
+
+#if !defined(__cplusplus)
+    #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+        #define __MAP_HAS_LITERAL_ARRAY
+    #endif
+#endif
+
 // this macro takes the address of the argument, but on gcc/clang can accept rvalues
-#if defined(__HMAP_HAS_LITERAL_ARRAY) && defined(__HMAP_HAS_TYPEOF)
+#if defined(__MAP_HAS_LITERAL_ARRAY) && defined(__MAP_HAS_TYPEOF)
     #if __clang__
         #define __MAP_ADDRESSOF(typevar, value) ((__typeof__(typevar)[1]){value}) // literal array decays to pointer to value
     #else
@@ -114,11 +128,11 @@ extern void    __map_unit_tests    (void);
 #define __MAP_HEADER(m)    ((__MapHeader *) (m) - 1)
 #define __MAP_TEMP(m)      __MAP_HEADER(m)->temp
 #define __MAP_TEMP_KEY(m)  (*(char **) __MAP_HEADER(m)->hash_table)
+#define __MAP_LEN(m)       ((m) ? __MAP_HEADER(m)->length : 0)
 #define __MAP_CAP(m)       ((m) ? __MAP_HEADER(m)->capacity : 0)
 
 #define __MAP_HASH_BINARY 0
 #define __MAP_HASH_STRING 1
-
 
 //***************************************************************************
 //          PUBLIC MACROS
@@ -126,11 +140,11 @@ extern void    __map_unit_tests    (void);
 
 #define HMAP_LEN(m)                 ((m) ? __MAP_HEADER((m)-1)->length-1 : 0)
 
-#define HMAP_PUT(m, k, v)           ((m) = __map_put_key((m), sizeof *(m), (void*) __MAP_ADDRESSOF((m)->key, (k)), sizeof (m)->key, 0), \ (m)[__MAP_TEMP((m)-1)].key = (k), \ (m)[__MAP_TEMP((m)-1)].value = (v))
-#define HMAP_PUT_STRUCT(m, s)       ((m) = __map_put_key((m), sizeof *(m), &(s).key, sizeof (s).key, __MAP_HASH_BINARY), \ (m)[__MAP_TEMP((m)-1)] = (s))
+#define HMAP_PUT(m, k, v)           ((m) = __map_put_key((m), sizeof *(m), (void*) __MAP_ADDRESSOF((m)->key, (k)), sizeof (m)->key, 0), (m)[__MAP_TEMP((m)-1)].key = (k), (m)[__MAP_TEMP((m)-1)].value = (v))
+#define HMAP_PUT_STRUCT(m, s)       ((m) = __map_put_key((m), sizeof *(m), &(s).key, sizeof (s).key, __MAP_HASH_BINARY), (m)[__MAP_TEMP((m)-1)] = (s))
 
-#define HMAP_GET_IDX(m,k)           ((m) = __map_get_key((m), sizeof *(m), (void*) __MAP_ADDRESSOF((m)->key, (k)), sizeof (m)->key, __MAP_HASH_BINARY), \ __MAP_TEMP((m)-1))
-#define HMAP_GET_IDX_TS(m,k,temp)   ((m) = __map_get_key_ts((m), sizeof *(m), (void*) __MAP_ADDRESSOF((m)->key, (k)), sizeof (m)->key, &(temp), __MAP_HASH_BINARY), \ (temp))
+#define HMAP_GET_IDX(m,k)           ((m) = __map_get_key((m), sizeof *(m), (void*) __MAP_ADDRESSOF((m)->key, (k)), sizeof (m)->key, __MAP_HASH_BINARY), __MAP_TEMP((m)-1))
+#define HMAP_GET_IDX_TS(m,k,temp)   ((m) = __map_get_key_ts((m), sizeof *(m), (void*) __MAP_ADDRESSOF((m)->key, (k)), sizeof (m)->key, &(temp), __MAP_HASH_BINARY), (temp))
 
 #define HMAP_GET_PTR(m, k)          ((void) HMAP_GET_IDX(m,k), &(m)[__MAP_TEMP((m)-1)])
 #define HMAP_GET_PTR_TS(m, k, temp) ((void) HMAP_GET_IDX_TS(m,k,temp), &(m)[temp])
@@ -150,14 +164,14 @@ extern void    __map_unit_tests    (void);
 
 //***************************************************************************
 
-#define SMAP_PUT(m, k, v)           ((m) = __map_put_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), \ (m)[__MAP_TEMP((m)-1)].value = (v))
-#define SMAP_PUTI(m, k, v)          ((m) = __map_put_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), \ (m)[__MAP_TEMP((m)-1)].value = (v), __MAP_TEMP((m)-1))
-#define SMAP_PUT_STRUCT(m, s)       ((m) = __map_put_key((m), sizeof *(m), (void*) (s).key, sizeof (s).key, __MAP_HASH_STRING), \ (m)[__MAP_TEMP((m)-1)] = (s), \ (m)[__MAP_TEMP((m)-1)].key = __MAP_TEMP_KEY((m)-1)) 
+#define SMAP_PUT(m, k, v)           ((m) = __map_put_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), (m)[__MAP_TEMP((m)-1)].value = (v))
+#define SMAP_PUTI(m, k, v)          ((m) = __map_put_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), (m)[__MAP_TEMP((m)-1)].value = (v), __MAP_TEMP((m)-1))
+#define SMAP_PUT_STRUCT(m, s)       ((m) = __map_put_key((m), sizeof *(m), (void*) (s).key, sizeof (s).key, __MAP_HASH_STRING), (m)[__MAP_TEMP((m)-1)] = (s), (m)[__MAP_TEMP((m)-1)].key = __MAP_TEMP_KEY((m)-1)) 
 
-#define SMAP_PPUT(m, p)             ((m) = __map_put_key((m), sizeof *(m), (void*) (p)->key, sizeof (p)->key, __MAP_HASH_PTR_TO_STRING), \ (m)[__MAP_TEMP((m)-1)] = (p))
+#define SMAP_PPUT(m, p)             ((m) = __map_put_key((m), sizeof *(m), (void*) (p)->key, sizeof (p)->key, __MAP_HASH_PTR_TO_STRING), (m)[__MAP_TEMP((m)-1)] = (p))
 
-#define SMAP_GET_IDX(m,k)           ((m) = __map_get_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), \ __MAP_TEMP((m)-1))
-#define SMAP_PGET_IDX(m,k)          ((m) = __map_get_key((m), sizeof *(m), (void*) (k), sizeof (*(m))->key, __MAP_HASH_PTR_TO_STRING), \ __MAP_TEMP((m)-1))
+#define SMAP_GET_IDX(m,k)           ((m) = __map_get_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), __MAP_TEMP((m)-1))
+#define SMAP_PGET_IDX(m,k)          ((m) = __map_get_key((m), sizeof *(m), (void*) (k), sizeof (*(m))->key, __MAP_HASH_PTR_TO_STRING), __MAP_TEMP((m)-1))
 
 #define SMAP_GET_PTR(m, k)          ((void) SMAP_GET_IDX(m,k), &(m)[__MAP_TEMP((m)-1)])
 
@@ -166,8 +180,8 @@ extern void    __map_unit_tests    (void);
 #define SMAP_DELETE(m,k)            (((m) = __map_del_key((m),sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_OFFSETOF((m),key), __MAP_HASH_STRING)),(m)?__MAP_TEMP((m)-1):0)
 #define SMAP_PDELETE(m,k)           (((m) = __map_del_key((m),sizeof *(m), (void*) (k), sizeof (*(m))->key, __MAP_OFFSETOF(*(m),key), __MAP_HASH_PTR_TO_STRING)),(m)?__MAP_TEMP((m)-1):0)
 
-#define SMAP_NEW_ARENA(m)           ((m) = __smap_mode(m, sizeof *(m), SMAP_ARENA))
-#define SMAP_NEW_STRDUP(m)          ((m) = __smap_mode(m, sizeof *(m), SMAP_STRDUP))
+#define SMAP_NEW_ARENA(m)           ((m) = __smap_mode(sizeof *(m), SMAP_ARENA))
+#define SMAP_NEW_STRDUP(m)          ((m) = __smap_mode(sizeof *(m), SMAP_STRDUP))
 
 #define SMAP_DEFAULT(m, v)          HMAP_DEFAULT(m,v)
 #define SMAP_DEFAULT_STRUCT(m, s)   HMAP_DEFAULT_STRUCT(m,s)
@@ -205,7 +219,7 @@ extern void    __map_unit_tests    (void);
 #endif
 
 #ifdef MAP_STATISTICS
-    #define MAP_STATS(x)   x
+    #define __MAP_STATS(x)   x
     size_t map_grow_count;
     size_t map_shrink_count;
     size_t map_rebuild_count;
@@ -214,13 +228,13 @@ extern void    __map_unit_tests    (void);
     size_t map_rehash_probes_count;
     size_t map_rehash_items_count;
 #else
-    #define MAP_STATS(x)
+    #define __MAP_STATS(x)
 #endif
 
 void* __map_array_grow(void *a, size_t item_size, size_t add_len, size_t min_cap)
 {
   void *b;
-  size_t min_len = MAP_LEN(a) + add_len;
+  size_t min_len = __MAP_LEN(a) + add_len;
 
   // compute the minimum capacity needed
   if (min_len > min_cap)
@@ -281,7 +295,7 @@ typedef struct
   size_t tombstone_count_threshold;
   size_t seed;
   size_t slot_count_log2;
-  MapStringArena string;
+  SMapStringArena string;
   __MapHashBucket *storage; // not a separate allocation, just 64-byte aligned storage after this struct
                             
 } __MapHashIndex;
@@ -351,7 +365,7 @@ static __MapHashIndex* __map_make_hash_index(size_t slot_count, __MapHashIndex *
 
     // to avoid infinite loop, we need to guarantee that at least one slot is empty and will terminate probes
     MAP_ASSERT(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
-    MAP_STATS(map_hash_alloc_count++);
+    __MAP_STATS(map_hash_alloc_count++);
     
     if (ot) 
     {
@@ -481,7 +495,7 @@ size_t map_hash_string(char *str, size_t seed)
     #pragma warning(disable:4127) // conditional expression is constant, for do..while(0) and sizeof()==
 #endif
 
-static size_t hmap_siphash_bytes(void *p, size_t len, size_t seed)
+static size_t map_siphash_bytes(void *p, size_t len, size_t seed)
 {
   unsigned char *d = (unsigned char *) p;
   size_t i,j;
@@ -498,7 +512,7 @@ static size_t hmap_siphash_bytes(void *p, size_t len, size_t seed)
   #define SIPROUND() \
     do {                   \
       v0 += v1; v1 = SIP_ROTATE_LEFT(v1, 13);  v1 ^= v0; v0 = SIP_ROTATE_LEFT(v0,__MAP_SIZE_T_BITS/2);   \
-      v2 += v3; v3 = SIP_ROTATE_LEFT(v3, 16);  v3 ^= v2;                         __MAP                   \
+      v2 += v3; v3 = SIP_ROTATE_LEFT(v3, 16);  v3 ^= v2;                                                 \
       v2 += v1; v1 = SIP_ROTATE_LEFT(v1, 17);  v1 ^= v2; v2 = SIP_ROTATE_LEFT(v2,__MAP_SIZE_T_BITS/2);   \
       v0 += v3; v3 = SIP_ROTATE_LEFT(v3, 21);  v3 ^= v0;                                                 \
     } while (0)
@@ -541,6 +555,11 @@ size_t map_hash_bytes(void *p, size_t len, size_t seed)
     if (len == 4) 
     {
         unsigned int hash = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+
+        // HASH32-BB  Bob Jenkin's presumably-accidental version of Thomas Wang hash with rotates turned into shifts.
+        // Note that converting these back to rotates makes it run a lot slower, presumably due to collisions, so I'm
+        // not really sure what's going on.
+
         hash ^= seed;
         hash = (hash ^ 61) ^ (hash >> 16);
         hash = hash + (hash << 3);
@@ -548,7 +567,6 @@ size_t map_hash_bytes(void *p, size_t len, size_t seed)
         hash = hash * 0x27d4eb2d;
         hash ^= seed;
         hash = hash ^ (hash >> 15);
-
         return (((size_t) hash << 16 << 16) | hash) ^ seed;
     } 
     else if (len == 8 && sizeof(size_t) == 8) 
@@ -577,6 +595,49 @@ size_t map_hash_bytes(void *p, size_t len, size_t seed)
     #pragma warning(pop)
 #endif
 
+// size_t map_hash_bytes(void *p, size_t len, size_t seed)
+// {
+//     unsigned char *d = (unsigned char *) p;
+//
+//     if (len == 4) 
+//     {
+//         unsigned int hash = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+//         hash ^= seed;
+//         hash = (hash ^ 61) ^ (hash >> 16);
+//         hash = hash + (hash << 3);
+//         hash = hash ^ (hash >> 4);
+//         hash = hash * 0x27d4eb2d;
+//         hash ^= seed;
+//         hash = hash ^ (hash >> 15);
+//
+//         return (((size_t) hash << 16 << 16) | hash) ^ seed;
+//     } 
+//     else if (len == 8 && sizeof(size_t) == 8) 
+//     {
+//         size_t hash = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+//         hash |= (size_t) (d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24)) << 16 << 16; // avoid warning if size_t == 4
+//         hash ^= seed;
+//         hash = (~hash) + (hash << 21);
+//         hash ^= SIP_ROTATE_RIGHT(hash,24);
+//         hash *= 265;
+//         hash ^= SIP_ROTATE_RIGHT(hash,14);
+//         hash ^= seed;
+//         hash *= 21;
+//         hash ^= SIP_ROTATE_RIGHT(hash,28);
+//         hash += (hash << 31);
+//         hash = (~hash) + (hash << 18);
+//         return hash;
+//     } 
+//     else 
+//     {
+//         return map_siphash_bytes(p,len,seed);
+//     }
+// }
+
+#ifdef _MSC_VER
+    #pragma warning(pop)
+#endif
+
 
 static int __map_is_key_equal(void *map, size_t item_size, void *key, size_t key_size, size_t key_offset, int mode, size_t i)
 {
@@ -600,10 +661,10 @@ void __map_free(void *map, size_t item_size)
         {
             size_t i;
             // skip 0th element, which is default
-            for (i=1; i < MAP_HEADER(map)->length; ++i)
+            for (i=1; i < __MAP_HEADER(map)->length; ++i)
                 MAP_FREE(NULL, *(char**) ((char *) map + item_size*i));
         }
-        map_str_reset(&__MAP_HASH_TABLE(map)->string);
+        smap_arena_reset(&__MAP_HASH_TABLE(map)->string);
     }
     MAP_FREE(NULL, __MAP_HEADER(map)->hash_table);
     MAP_FREE(NULL, __MAP_HEADER(map));
@@ -612,7 +673,7 @@ void __map_free(void *map, size_t item_size)
 static ptrdiff_t __map_find_slot(void *map, size_t item_size, void *key, size_t key_size, size_t key_offset, int mode)
 {
     void *raw_a = __MAP_HASH_TO_ARR(map,item_size);
-    MapHashIndex *table = __MAP_HASH_TABLE(raw_a);
+    __MapHashIndex *table = __MAP_HASH_TABLE(raw_a);
     size_t hash = mode >= __MAP_HASH_STRING ? map_hash_string((char*)key,table->seed) : map_hash_bytes(key, key_size,table->seed);
     size_t step = __MAP_BUCKET_LENGTH;
     size_t limit,i;
@@ -669,7 +730,7 @@ static ptrdiff_t __map_find_slot(void *map, size_t item_size, void *key, size_t 
   /* NOTREACHED */
 }
 
-void* __map_hmget_key_ts(void *map, size_t item_size, void *key, size_t key_size, ptrdiff_t *temp, int mode)
+void* __map_get_key_ts(void *map, size_t item_size, void *key, size_t key_size, ptrdiff_t *temp, int mode)
 {
     size_t key_offset = 0;
     if (map == NULL) 
@@ -853,7 +914,7 @@ void* __map_put_key(void *map, size_t item_size, void *key, size_t key_size, int
         ++table->used_count;
 
         {
-            ptrdiff_t i = (ptrdiff_t) MAP_LEN(map);
+            ptrdiff_t i = (ptrdiff_t) __MAP_LEN(map);
             if ((size_t) i+1 > __MAP_CAP(map))
                 *(void **) &map = __map_array_grow(map, item_size, 1, 0);
             raw_a = __MAP_ARR_TO_HASH(map,item_size);
@@ -877,7 +938,7 @@ void* __map_put_key(void *map, size_t item_size, void *key, size_t key_size, int
     }
 }
 
-void * __smap_mode(size_t item_size, int mode)
+void* __smap_mode(size_t item_size, int mode)
 {
     void *map = __map_array_grow(0, item_size, 0, 1);
     __MapHashIndex *h;
@@ -916,7 +977,7 @@ void * __map_del_key(void *map, size_t item_size, void *key, size_t key_size, si
                 __MapHashBucket *b = &table->storage[slot >> __MAP_BUCKET_SHIFT];
                 int i = slot & __MAP_BUCKET_MASK;
                 ptrdiff_t old_index = b->index[i];
-                ptrdiff_t final_index = (ptrdiff_t) MAP_LEN(raw_a)-1-1; // minus one for the raw_a vs map, and minus one for 'last'
+                ptrdiff_t final_index = (ptrdiff_t) __MAP_LEN(raw_a)-1-1; // minus one for the raw_a vs map, and minus one for 'last'
                 MAP_ASSERT(slot < (ptrdiff_t) table->slot_count);
                 --table->used_count;
                 ++table->tombstone_count;
@@ -957,7 +1018,7 @@ void * __map_del_key(void *map, size_t item_size, void *key, size_t key_size, si
                 } 
                 else if (table->tombstone_count > table->tombstone_count_threshold) 
                 {
-                    MAP_HEADER(raw_a)->hash_table = __map_make_hash_index(table->slot_count   , table);
+                    __MAP_HEADER(raw_a)->hash_table = __map_make_hash_index(table->slot_count   , table);
                     MAP_FREE(NULL, table);
                     __MAP_STATS(++map_hash_rebuild_count);
                 }
@@ -986,7 +1047,7 @@ static char* smap_strdup(char *str)
 #define SMAP_STRING_ARENA_BLOCKSIZE_MAX  (1u<<20)
 #endif
 
-char* map_stralloc(SMapStringArena *map, char *str)
+char* smap_arena_alloc(SMapStringArena *map, char *str)
 {
     char *p;
     size_t len = strlen(str)+1;
@@ -1055,4 +1116,238 @@ void smap_arena_reset(SMapStringArena *map)
 }
 
 #endif
+
+
+#ifdef MAP_UNIT_TESTS
+
+#include <stdio.h>
+
+#ifndef MAP_ASSERT
+    #define MAP_ASSERT assert
+    #include <assert.h>
+#endif
+
+typedef struct { int key,b,c,d; } test_struct;
+typedef struct { int key[2],b,c,d; } test_struct2;
+
+static char buffer[256];
+char *strkey(int n)
+{
+#if defined(_WIN32) && defined(__STDC_WANT_SECURE_LIB__)
+    sprintf_s(buffer, sizeof(buffer), "test_%d", n);
+#else
+    sprintf(buffer, "test_%d", n);
+#endif
+    return buffer;
+}
+
+void map_unit_tests(void)
+{
+    const int testsize = 100000;
+    const int testsize2 = testsize/20;
+    struct { int   key;        int value; }  *intmap  = NULL;
+    struct { char *key;        int value; }  *strmap  = NULL, s;
+    struct { test_struct key;  int value; }  *map     = NULL;
+    test_struct                              *map2    = NULL;
+    test_struct2                             *map3    = NULL;
+    SMapStringArena                           sa      = { 0 };
+    int key3[2] = { 1,2 };
+    ptrdiff_t temp;
+
+    int i,j;
+
+    i = 1;
+    MAP_ASSERT(HMAP_GET_IDX(intmap,i) == -1);
+    HMAP_DEFAULT(intmap, -2);
+    MAP_ASSERT(HMAP_GET_IDX(intmap, i) == -1);
+    MAP_ASSERT(HMAP_GET(intmap, i) == -2);
+
+    for (i=0; i < testsize; i+=2)
+        HMAP_PUT(intmap, i, i*5);
+
+    for (i=0; i < testsize; i+=1) 
+    {
+        if (i & 1) MAP_ASSERT(HMAP_GET(intmap, i) == -2 );
+        else       MAP_ASSERT(HMAP_GET(intmap, i) == i*5);
+
+        if (i & 1) MAP_ASSERT(HMAP_GET_TS(intmap, i, temp) == -2 );
+        else       MAP_ASSERT(HMAP_GET_TS(intmap, i, temp) == i*5);
+    }
+
+    for (i=0; i < testsize; i+=2)
+        HMAP_PUT(intmap, i, i*3);
+
+    for (i=0; i < testsize; i+=1)
+        if (i & 1) MAP_ASSERT(HMAP_GET(intmap, i) == -2 );
+        else       MAP_ASSERT(HMAP_GET(intmap, i) == i*3);
+    
+    for (i=2; i < testsize; i+=4)
+        HMAP_DELETE(intmap, i); // delete half the entries
+    
+    for (i=0; i < testsize; i+=1)
+        if (i & 3) MAP_ASSERT(HMAP_GET(intmap, i) == -2 );
+        else       MAP_ASSERT(HMAP_GET(intmap, i) == i*3);
+
+    for (i=0; i < testsize; i+=1)
+        HMAP_DELETE(intmap, i); // delete the rest of the entries
+                          //
+    for (i=0; i < testsize; i+=1)
+        MAP_ASSERT(HMAP_GET(intmap, i) == -2 );
+
+    HMAP_FREE(intmap);
+
+    for (i=0; i < testsize; i+=2)
+        HMAP_PUT(intmap, i, i*3);
+    HMAP_FREE(intmap);
+
+#if defined(__clang__) || defined(__GNUC__)
+#ifndef __cplusplus
+    intmap = NULL;
+    HMAP_PUT(intmap, 15, 7);
+    HMAP_PUT(intmap, 11, 3);
+    HMAP_PUT(intmap,  9, 5);
+    MAP_ASSERT(HMAP_GET(intmap, 9) == 5);
+    MAP_ASSERT(HMAP_GET(intmap, 11) == 3);
+    MAP_ASSERT(HMAP_GET(intmap, 15) == 7);
+#endif
+#endif
+
+    for (i=0; i < testsize; ++i)
+        smap_arena_alloc(&sa, strkey(i));
+    smap_arena_reset(&sa);
+
+    {
+        s.key = "a", s.value = 1;
+        SMAP_PUT_STRUCT(strmap, s);
+        MAP_ASSERT(*strmap[0].key == 'a');
+        MAP_ASSERT(strmap[0].key == s.key);
+        MAP_ASSERT(strmap[0].value == s.value);
+        SMAP_FREE(strmap);
+    }
+
+    {
+        s.key = "a", s.value = 1;
+        SMAP_NEW_STRDUP(strmap);
+        SMAP_PUT_STRUCT(strmap, s);
+        MAP_ASSERT(*strmap[0].key == 'a');
+        MAP_ASSERT(strmap[0].key != s.key);
+        MAP_ASSERT(strmap[0].value == s.value);
+        SMAP_FREE(strmap);
+    }
+
+    {
+        s.key = "a", s.value = 1;
+        SMAP_NEW_ARENA(strmap);
+        SMAP_PUT_STRUCT(strmap, s);
+        MAP_ASSERT(*strmap[0].key == 'a');
+        MAP_ASSERT(strmap[0].key != s.key);
+        MAP_ASSERT(strmap[0].value == s.value);
+        SMAP_FREE(strmap);
+    }
+
+    for (j=0; j < 2; ++j) 
+    {
+        MAP_ASSERT(SMAP_GET_IDX(strmap,"foo") == -1);
+        if (j == 0)
+            SMAP_NEW_STRDUP(strmap);
+        else
+            SMAP_NEW_ARENA(strmap);
+
+        MAP_ASSERT(SMAP_GET_IDX(strmap,"foo") == -1);
+        SMAP_DEFAULT(strmap, -2);
+        MAP_ASSERT(SMAP_GET_IDX(strmap,"foo") == -1);
+
+        for (i=0; i < testsize; i+=2)
+            SMAP_PUT(strmap, strkey(i), i*3);
+
+        for (i=0; i < testsize; i+=1)
+            if (i & 1) MAP_ASSERT(SMAP_GET(strmap, strkey(i)) == -2 );
+            else       MAP_ASSERT(SMAP_GET(strmap, strkey(i)) == i*3);
+
+        for (i=2; i < testsize; i+=4)
+            SMAP_DELETE(strmap, strkey(i)); // delete half the entries
+                                      
+        for (i=0; i < testsize; i+=1)
+            if (i & 3) MAP_ASSERT(SMAP_GET(strmap, strkey(i)) == -2 );
+            else       MAP_ASSERT(SMAP_GET(strmap, strkey(i)) == i*3);
+
+        for (i=0; i < testsize; i+=1)
+            SMAP_DELETE(strmap, strkey(i)); // delete the rest of the entries
+
+        for (i=0; i < testsize; i+=1)
+            MAP_ASSERT(SMAP_GET(strmap, strkey(i)) == -2 );
+
+        SMAP_FREE(strmap);
+    }
+
+    {
+        struct { char *key; char value; } *hash = NULL;
+        char name[4] = "jen";
+        SMAP_PUT(hash, "bob"   , 'h');
+        SMAP_PUT(hash, "sally" , 'e');
+        SMAP_PUT(hash, "fred"  , 'l');
+        SMAP_PUT(hash, "jen"   , 'x');
+        SMAP_PUT(hash, "doug"  , 'o');
+
+        SMAP_PUT(hash, name    , 'l');
+        SMAP_FREE(hash);
+    }
+
+    for (i=0; i < testsize; i += 2) 
+    {
+        test_struct s = { i,i*2,i*3,i*4 };
+        HMAP_PUT(map, s, i*5);
+    }
+
+    for (i=0; i < testsize; i += 1) 
+    {
+        test_struct s = { i,i*2,i*3  ,i*4 };
+        test_struct t = { i,i*2,i*3+1,i*4 };
+        if (i & 1) MAP_ASSERT(HMAP_GET(map, s) == 0);
+        else       MAP_ASSERT(HMAP_GET(map, s) == i*5);
+
+        if (i & 1) MAP_ASSERT(HMAP_GET_TS(map, s, temp) == 0);
+        else       MAP_ASSERT(HMAP_GET_TS(map, s, temp) == i*5);
+
+        //MAP_ASSERT(HMAP_GET(map, t.key) == 0);
+    }
+
+    for (i=0; i < testsize; i += 2) 
+    {
+        test_struct s = { i,i*2,i*3,i*4 };
+        HMAP_PUT_STRUCT(map2, s);
+    }
+
+    HMAP_FREE(map);
+
+    for (i=0; i < testsize; i += 1) 
+    {
+        test_struct s = { i,i*2,i*3,i*4 };
+        test_struct t = { i,i*2,i*3+1,i*4 };
+
+        if (i & 1) MAP_ASSERT(HMAP_GET_STRUCT(map2, s.key).d == 0);
+        else       MAP_ASSERT(HMAP_GET_STRUCT(map2, s.key).d == i*4);
+
+        //MAP_ASSERT(HMAP_GET_PTR(map2, t.key) == 0);
+    }
+    HMAP_FREE(map2);
+
+    // for (i=0; i < testsize; i += 2) 
+    // {
+    //     test_struct2 s = { { i,i*2 }, i*3,i*4, i*5 };
+    //     HMAP_PUT_STRUCT(map3, s);
+    // }
+    //
+    // for (i=0; i < testsize; i += 1) 
+    // {
+    //     test_struct2 s = { { i,i*2}, i*3, i*4, i*5 };
+    //     test_struct2 t = { { i,i*2}, i*3+1, i*4, i*5 };
+    //
+    //     if (i & 1) MAP_ASSERT(HMAP_GET_STRUCT(map3, s.key).d == 0);
+    //     else       MAP_ASSERT(HMAP_GET_STRUCT(map3, s.key).d == i*5);
+    //     //MAP_ASSERT(hmgetp(map3, t.key) == 0);
+    // }
+}
+#endif
+
 
