@@ -1,21 +1,69 @@
 
-// Adapted from stb_ds.h - v0.67 
-//    public domain data structures - Sean Barrett 2019
-//    http://nothings.org/stb_ds
+/* array.h - dynamic array macros
 
-#ifndef ARRAY_H
-#define ARRAY_H
+   Adapted from stb_ds.h - v0.67 
+   public domain data structures - Sean Barrett 2019
+   http://nothings.org/stb_ds 
 
-//***************************************************************************
-//          CONFIGURATION OPTIONS
-//***************************************************************************
+   To use this library, do this in *one* C file:
+      #define ARRAY_IMPLEMENTATION
+      #include "base/array.h"
 
-// #define ARRAY_STATISTICS  // will include array_grow_count which tracks
-                             // the number of times any dynamic array had
-                             // to be resized
+COMPILE-TIME OPTIONS
 
-// #define __ARRAY_REALLOC(context, ptr, size) user_defined_realloc
-// #define __ARRAY_FREE(context, ptr)          user_defined_free   
+  #define ARRAY_REALLOC_FUNC(context,ptr,size) user_defined_realloc
+  #define ARRAY_FREE_FUNC(context,ptr)         user_defined_free
+
+     These defines only need to be set in the file containing #define ARRAY_IMPLEMENTATION.
+
+     By default array uses stdlib realloc() and free() for memory management. You can
+     substitute your own functions instead by defining these symbols. You must either
+     define both, or neither. Note that at the moment, 'context' will always be NULL.
+  
+  #define ARRAY_STATISTICS
+
+    Will include global array_grow_count which tracks the number of times any dynamic 
+    array had to be resized. 
+
+  #define ARRAY_UNIT_TESTS
+
+     Defines a function stbds_unit_tests() that checks the functionality of the data structure.
+
+
+DOCUMENTATION
+
+  Declare an empty dynamic array of type T
+    T* t_arr = NULL;
+
+  Access the i'th item of a dynamic array 't_arr' of type T, T* t_arr:
+    t_arr[i]
+
+
+  size_t  ARRAY_LEN          (T* array)                        - Returns number of elements in array          
+  size_t  ARRAY_CAP          (T* array)                        - Returns number of elements array can hold before resizing
+  
+  void    ARRAY_SET_LEN      (T* array)                        - Sets the length of the array. Leaves slots uninitialized
+  void    ARRAY_SET_CAP      (T* array)                        - Sets the capacity of the array. Cannot shrink array
+  
+  T       ARRAY_PUSH         (T* array, T item)                - Copies item to end of array. Returns item
+  void    ARRAY_POP          (T* array)                        - Removes last item from array and returns the item
+  
+  T*      ARRAY_ADDN_PTR     (T* array, size_t n)              - Adds n unitialized items to array and returns pointer to first unitialized item
+  size_t  ARRAY_ADDN_INDEX   (T* array, size_t n)              - Adds n unitialized items to array and returns index to first unitialized item
+  
+  T       ARRAY_INSERT       (T* array, size_t i, T item)      - Copies item into ith index of array and shifts items to make space. Returns item.
+  void    ARRAY_INSERT_N     (T* array, size_t i, size_t n)    - Creates room for n uninitialized entries starting from index i
+  
+  void    ARRAY_DELETE       (T* array, size_t i)              - Deletes ith item from array and shifts items after down
+  void    ARRAY_DELETE_N     (T* array, size_t i, size_t n)    - Detetes n items starting from index i and shifts items after down  
+  void    ARRAY_DELETE_SWAP  (T* array, size_t i)              - Deletes ith item from array and swaps last item instead of shifting down
+  
+  void    ARRAY_FREE         (T* array)                        - Frees array memory and sets array pointer to NULL
+
+*/
+
+#ifndef _ARRAY_H
+#define _ARRAY_H
 
 //***************************************************************************
 //          INCLUDE FILES
@@ -24,7 +72,7 @@
 #include <string.h> // for memmove
 
 //***************************************************************************
-//          HIDDEN
+//          TYPES
 //***************************************************************************
 
 typedef struct
@@ -34,16 +82,23 @@ typedef struct
 
 } __ArrayHeader;
 
+//***************************************************************************
+//          FUNCTION PROTOTYPES
+//***************************************************************************
+
 extern void* __array_grow(void* arr, size_t item_size, size_t add_len, size_t min_cap);
-static void  __array_unit_tests(void);
+
+#ifdef ARRAY_UNIT_TESTS
+    static void  array_unit_tests(void);
+#endif
+
+//***************************************************************************
+//          MACROS
+//***************************************************************************
 
 #define __ARRAY_HEADER(a)         (((__ArrayHeader*)(a)) - 1)
 #define __ARRAY_GROW(a,add,cap)   ((a) = __array_grow((a), sizeof *(a), (add), (cap)))
 #define __ARRAY_MAYBE_GROW(a,n)   ((!(a) || __ARRAY_HEADER(a)->length + (n) > __ARRAY_HEADER(a)->capacity) ? (__ARRAY_GROW(a,n,0),0) : 0)
-
-//***************************************************************************
-//          PUBLIC MACROS
-//***************************************************************************
 
 #define ARRAY_CAP(a)             ((a) ? __ARRAY_HEADER(a)->capacity : 0)
 #define ARRAY_LEN(a)             ((a) ? __ARRAY_HEADER(a)->length : 0)
@@ -64,9 +119,9 @@ static void  __array_unit_tests(void);
 #define ARRAY_DELETE(a,i)        ARRAY_DELETEN(a,i,1)
 #define ARRAY_DELETE_SWAP(a,i)   ((a)[i] = (a)[__ARRAY_HEADER(a)->length-1], __ARRAY_HEADER(a)->length -= 1)
 
-#define ARRAY_FREE(a)            ((void)((a) ? __ARRAY_FREE(NULL, __ARRAY_HEADER(a)) : (void)0), (a)=NULL)
+#define ARRAY_FREE(a)            ((void)((a) ? ARRAY_FREE_FUNC(NULL, __ARRAY_HEADER(a)) : (void)0), (a)=NULL)
 
-#endif // ARRAY_H
+#endif // _ARRAY_H
 
 //***************************************************************************
 //          FUNCTION IMPLEMENTATIONS
@@ -81,13 +136,13 @@ static void  __array_unit_tests(void);
     #define __ARRAY_STATS(x)
 #endif
 
-#if defined(__ARRAY_REALLOC) && !defined(__ARRAY_FREE) || !defined(__ARRAY_REALLOC) && defined(__ARRAY_FREE)
-    #error "You must define both __ARRAY_REALLOC and __ARRAY_FREE, or neither."
+#if defined(ARRAY_REALLOC_FUNC) && !defined(ARRAY_FREE_FUNC) || !defined(ARRAY_REALLOC_FUNC) && defined(ARRAY_FREE_FUNC)
+    #error "You must define both ARRAY_REALLOC_FUNC and ARRAY_FREE_FUNC, or neither."
 #endif
-#if !defined(__ARRAY_REALLOC) && !defined(__ARRAY_FREE)
+#if !defined(ARRAY_REALLOC_FUNC) && !defined(ARRAY_FREE_FUNC)
     #include <stdlib.h>
-    #define __ARRAY_REALLOC(c,p,s) realloc(p,s)
-    #define __ARRAY_FREE(c,p)      free(p)
+    #define ARRAY_REALLOC_FUNC(c,p,s) realloc(p,s)
+    #define ARRAY_FREE_FUNC(c,p)      free(p)
 #endif
 
 void* __array_grow(void* arr, size_t item_size, size_t add_len, size_t min_cap)
@@ -107,7 +162,7 @@ void* __array_grow(void* arr, size_t item_size, size_t add_len, size_t min_cap)
     else if (min_cap < 4)
         min_cap = 4;
 
-    void* arr_new = __ARRAY_REALLOC(NULL, (arr) ? __ARRAY_HEADER(arr) : 0, item_size * min_cap + sizeof(__ArrayHeader));
+    void* arr_new = ARRAY_REALLOC_FUNC(NULL, (arr) ? __ARRAY_HEADER(arr) : 0, item_size * min_cap + sizeof(__ArrayHeader));
     arr_new = (char*)arr_new + sizeof(__ArrayHeader);
 
     if (arr == NULL)
@@ -189,5 +244,4 @@ static void array_unit_tests(void)
 }
 
 #endif // ARRAY_UNIT_TESTS
-
 
