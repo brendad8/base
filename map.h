@@ -93,17 +93,13 @@ STRING MAP API
   size_t   SMAP_PUTI            (T* map, char* key, Value value)     - Inserts or replaces a key/value pair and returns its index
   void     SMAP_PUT_STRUCT      (T* map, T entry)                    - Inserts or replaces an entire entry
 
-  // void     SMAP_PPUT            (T** map, T* entry)                  - Inserts pointer to entry using entry->key
-
   size_t   SMAP_GET_IDX         (T* map, char* key)                  - Returns index of key
-  // size_t   SMAP_PGET_IDX        (T** map, char* key)                 - Returns index of pointer entry
 
   T*       SMAP_GET_PTR         (T* map, char* key)                  - Returns pointer to entry
   T*       SMAP_GET_PTR_NULL    (T* map, char* key)                  - Returns NULL if key is not found
 
   Value    SMAP_GET             (T* map, char* key)                  - Returns value associated with key
   T        SMAP_GET_STRUCT      (T* map, char* key)                  - Returns entire entry
-  T*       SMAP_PGET            (T** map, char* key)                 - Returns pointer entry
 
   bool     SMAP_DELETE          (T* map, char* key)                  - Removes key from map
   bool     SMAP_PDELETE         (T** map, char* key)                 - Removes pointer entry
@@ -113,6 +109,9 @@ STRING MAP API
 
   size_t   SMAP_LEN             (T* map)                             - Returns number of entries in map
   void     SMAP_FREE            (T* map)                             - Frees map memory and sets map pointer to NULL
+
+
+  TODO(bcall): document leftover 3 ptr smap macros...
 
 */
 
@@ -275,7 +274,6 @@ extern void*   __smap_mode         (size_t item_size, int mode);
 #define SMAP_PUT(m, k, v)           ((m) = __map_put_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), (m)[__MAP_TEMP((m)-1)].value = (v))
 #define SMAP_PUTI(m, k, v)          ((m) = __map_put_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), (m)[__MAP_TEMP((m)-1)].value = (v), __MAP_TEMP((m)-1))
 #define SMAP_PUT_STRUCT(m, s)       ((m) = __map_put_key((m), sizeof *(m), (void*) (s).key, sizeof (s).key, __MAP_HASH_STRING), (m)[__MAP_TEMP((m)-1)] = (s), (m)[__MAP_TEMP((m)-1)].key = __MAP_TEMP_KEY((m)-1)) 
-
 #define SMAP_PPUT(m, p)             ((m) = __map_put_key((m), sizeof *(m), (void*) (p)->key, sizeof (p)->key, __MAP_HASH_PTR_TO_STRING), (m)[__MAP_TEMP((m)-1)] = (p))
 
 #define SMAP_GET_IDX(m,k)           ((m) = __map_get_key((m), sizeof *(m), (void*) (k), sizeof (m)->key, __MAP_HASH_STRING), __MAP_TEMP((m)-1))
