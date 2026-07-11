@@ -1,17 +1,43 @@
 
+/* queue.h - queue data structure macros
+
+COMPILE-TIME OPTIONS
+
+  #define QUEUE_UNIT_TESTS
+
+     Defines queue_unit_tests() which verifies the functionality of the data structure.
 
 
-//***************************************************************************
-//          DOCUMENTATION
-//***************************************************************************
+DOCUMENTATION
 
-// void  QUEUE_PUSH  (T* first, T* last, T* node)   Pushes node to end of queue
-// void  QUEUE_POP   (T* first, T* last)            Pops node from start of queue. Node is not returned.
+  Declare a node type with the following structure:
+
+    typedef struct T T;
+    struct T
+    {
+        // user-defined data here
+        ...
+        T* next;
+    };
+
+  Declare an empty queue:
+
+    T* t_first = NULL;
+    T* t_last  = NULL;
 
 
-// void  QUEUE_PUSH_N  (T* first, T* last, T* node, Text next)   
-// void  QUEUE_POP_N   (T* first, T* last, Text next)            
- 
+    void  QUEUE_PUSH    (T* first, T* last, T* node)    - Pushes node onto the back of the queue
+    void  QUEUE_POP     (T* first, T* last)             - Removes the front node from the queue. The removed node is not returned.
+
+
+  The macros above assume each node contains a pointer named "next".
+  The macros below allow a different field name to be specified.
+
+    void  QUEUE_PUSH_N  (T* first, T* last, T* node, next)
+    void  QUEUE_POP_N   (T* first, T* last, next)
+
+*/
+
 #ifndef _QUEUE_H
 #define _QUEUE_H
 

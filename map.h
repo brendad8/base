@@ -1,15 +1,123 @@
 
+/* map.h - hash table macros
+
+   To use this library, do this in *one* C file:
+      #define MAP_IMPLEMENTATION
+      #include "base/map.h"
+  
+
+ACKNOWLEDGMENTS
+
+   Adapted from stb_ds.h - v0.67
+   public domain data structures - Sean Barrett 2019
+   http://nothings.org/stb_ds
+
+
+COMPILE-TIME OPTIONS
+
+  #define MAP_REALLOC_FUNC(context,ptr,size) user_defined_realloc
+  #define MAP_FREE_FUNC(context,ptr)         user_defined_free
+
+     These defines only need to be set in the file containing
+     #define MAP_IMPLEMENTATION.
+
+     By default map uses stdlib realloc() and free() for memory
+     management. You can substitute your own functions instead by
+     defining these symbols. You must either define both, or neither.
+     Note that at the moment, 'context' will always be NULL.
+
+  #define MAP_UNIT_TESTS
+
+     Defines map_unit_tests() which verifies the functionality of the
+     data structure.
+
+
+DOCUMENTATION
+
+  A hash map entry must contain fields named "key" and "value".
+
+    typedef struct
+    {
+        KeyType   key;
+        ValueType value;
+    } Entry;
+
+
+  Declare an empty hash map:
+
+    Entry* map = NULL;
+
+
+  Loop over the entries of the hashmap:
+
+    for (size_t i = 0; i < HMAP_LEN(map); i++)
+    {
+        Entry entry = map[i];
+    }
+
+
+HASH MAP API
+
+  size_t   HMAP_LEN             (T* map)                             - Returns number of entries in map
+
+  void     HMAP_PUT             (T* map, Key key, Value value)       - Inserts or replaces a key/value pair
+  void     HMAP_PUT_STRUCT      (T* map, T entry)                    - Inserts or replaces an entire entry
+
+  size_t   HMAP_GET_IDX         (T* map, Key key)                    - Returns index of key
+  size_t   HMAP_GET_IDX_TS      (T* map, Key key, size_t temp)       - Thread-safe version of HMAP_GET_IDX
+
+  T*       HMAP_GET_PTR         (T* map, Key key)                    - Returns pointer to entry
+  T*       HMAP_GET_PTR_TS      (T* map, Key key, size_t temp)       - Thread-safe version of HMAP_GET_PTR
+  T*       HMAP_GET_PTR_NULL    (T* map, Key key)                    - Returns NULL if key is not found
+
+  Value    HMAP_GET             (T* map, Key key)                    - Returns value associated with key
+  Value    HMAP_GET_TS          (T* map, Key key, size_t temp)       - Thread-safe version of HMAP_GET
+  T        HMAP_GET_STRUCT      (T* map, Key key)                    - Returns entire entry
+
+  bool     HMAP_DELETE          (T* map, Key key)                    - Removes key from map
+
+  void     HMAP_DEFAULT         (T* map, Value value)                - Sets default value returned for missing keys
+  void     HMAP_DEFAULT_STRUCT  (T* map, T entry)                    - Sets default entry returned for missing keys
+
+  void     HMAP_FREE            (T* map)                             - Frees map memory and sets map pointer to NULL
+
+
+STRING MAP API
+
+  String maps use NULL-terminated strings as keys.
+
+  void     SMAP_NEW_ARENA       (T* map)                             - Creates a string map using arena allocated keys
+  void     SMAP_NEW_STRDUP      (T* map)                             - Creates a string map using duplicated keys
+
+  void     SMAP_PUT             (T* map, char* key, Value value)     - Inserts or replaces a key/value pair
+  size_t   SMAP_PUTI            (T* map, char* key, Value value)     - Inserts or replaces a key/value pair and returns its index
+  void     SMAP_PUT_STRUCT      (T* map, T entry)                    - Inserts or replaces an entire entry
+
+  // void     SMAP_PPUT            (T** map, T* entry)                  - Inserts pointer to entry using entry->key
+
+  size_t   SMAP_GET_IDX         (T* map, char* key)                  - Returns index of key
+  // size_t   SMAP_PGET_IDX        (T** map, char* key)                 - Returns index of pointer entry
+
+  T*       SMAP_GET_PTR         (T* map, char* key)                  - Returns pointer to entry
+  T*       SMAP_GET_PTR_NULL    (T* map, char* key)                  - Returns NULL if key is not found
+
+  Value    SMAP_GET             (T* map, char* key)                  - Returns value associated with key
+  T        SMAP_GET_STRUCT      (T* map, char* key)                  - Returns entire entry
+  T*       SMAP_PGET            (T** map, char* key)                 - Returns pointer entry
+
+  bool     SMAP_DELETE          (T* map, char* key)                  - Removes key from map
+  bool     SMAP_PDELETE         (T** map, char* key)                 - Removes pointer entry
+
+  void     SMAP_DEFAULT         (T* map, Value value)                - Sets default value returned for missing keys
+  void     SMAP_DEFAULT_STRUCT  (T* map, T entry)                    - Sets default entry returned for missing keys
+
+  size_t   SMAP_LEN             (T* map)                             - Returns number of entries in map
+  void     SMAP_FREE            (T* map)                             - Frees map memory and sets map pointer to NULL
+
+*/
 
 #ifndef MAP_H
 #define MAP_H
-
-//***************************************************************************
-//          CONFIGURATION OPTIONS
-//***************************************************************************
-
-#ifdef MAP_UNIT_TESTS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
 
 //***************************************************************************
 //          INCLUDE FILES
@@ -1119,6 +1227,8 @@ void smap_arena_reset(SMapStringArena *map)
 
 
 #ifdef MAP_UNIT_TESTS
+
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 

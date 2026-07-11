@@ -1,13 +1,17 @@
 
 /* array.h - dynamic array macros
 
+   To use this library, do this in *one* C file:
+      #define ARRAY_IMPLEMENTATION
+      #include "base/array.h"
+
+
+ACKNOWLEDGMENTS
+   
    Adapted from stb_ds.h - v0.67 
    public domain data structures - Sean Barrett 2019
    http://nothings.org/stb_ds 
 
-   To use this library, do this in *one* C file:
-      #define ARRAY_IMPLEMENTATION
-      #include "base/array.h"
 
 COMPILE-TIME OPTIONS
 

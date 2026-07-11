@@ -5,14 +5,14 @@ COMPILE-TIME OPTIONS
 
   #define DLL_UNIT_TESTS
 
-     Defines a function dll_unit_tests() that checks the functionality of the data structure.
+     Defines dll_unit_tests() which verifies the functionality of the data structure.
 
 
 DOCUMENTATION
 
   Declare a node type with the following structure:
 
-    typedef struct T T; 
+    typedef struct T T;
     struct T
     {
         // user-defined data here
@@ -21,38 +21,40 @@ DOCUMENTATION
         T* next;
     };
 
-  Declare an empty head and tail for a doubly-linked list of type T:
+  Declare an empty doubly-linked list:
 
     T* t_head = NULL;
     T* t_tail = NULL;
 
 
-  void  DLL_PUSH_BACK         (T* first, T* last, T* node)                 - Pushes node to end of list
-  void  DLL_PUSH_FRONT        (T* first, T* last, T* node)                 - Pushes node to front of list
- 
-  void  DLL_INSERT_AFTER      (T* first, T* last, T* ref_node, T* node)    - Inserts node after reference node in list
-  void  DLL_INSERT_BEFORE     (T* first, T* last, T* ref_node, T* node)    - Inserts node before reference node in list
- 
-  void  DLL_REMOVE            (T* first, T* last, T* node)                 - Removes node from list
-  void  DLL_REMOVE_FIRST      (T* first, T* last)                          - Removes node from front of list
-  void  DLL_REMOVE_LAST       (T* first, T* last)                          - Removes node from end of list
+    void  DLL_PUSH_BACK      (T* first, T* last, T* node)               - Pushes node onto the back of the list
+    void  DLL_PUSH_FRONT     (T* first, T* last, T* node)               - Pushes node onto the front of the list
+
+    void  DLL_INSERT_AFTER   (T* first, T* last, T* ref_node, T* node)  - Inserts node after ref_node
+    void  DLL_INSERT_BEFORE  (T* first, T* last, T* ref_node, T* node)  - Inserts node before ref_node
+
+    void  DLL_REMOVE         (T* first, T* last, T* node)               - Removes node from the list
+    void  DLL_REMOVE_FIRST   (T* first, T* last)                        - Removes the front node from the list. The removed node is not returned.
+    void  DLL_REMOVE_LAST    (T* first, T* last)                        - Removes the back node from the list. The removed node is not returned.
 
 
-  The macros above assume the nodes reference other nodes with fields named "prev" and "next".
-  The macros below allow for the user to specify the names of the fields for "next" and "prev".
+  The macros above assume each node contains pointers named "prev" and
+  "next". The macros below allow different field names to be specified.
 
 
-  void  DLL_PUSH_BACK_NP      (T* first, T* last, T* node, Text next, Text prev)                  
-  void  DLL_PUSH_FRONT_NP     (T* first, T* last, T* node, Text next, Text prev)                 
- 
-  void  DLL_INSERT_AFTER_NP   (T* first, T* last, T* ref_node, T* node, Text next, Text prev)    
-  void  DLL_INSERT_BEFORE_NP  (T* first, T* last, T* ref_node, T* node, Text next, Text prev)    
- 
-  void  DLL_REMOVE_NP         (T* first, T* last, T* node, Text next, Text prev)                 
-  void  DLL_REMOVE_FIRST_NP   (T* first, T* last, Text next, Text prev)                          
-  void  DLL_REMOVE_LAST_NP    (T* first, T* last, Text next, Text prev)                          
+    void  DLL_PUSH_BACK_NP     (T* first, T* last, T* node, next, prev)
+    void  DLL_PUSH_FRONT_NP    (T* first, T* last, T* node, next, prev)
+
+    void  DLL_INSERT_AFTER_NP  (T* first, T* last, T* ref_node, T* node, next, prev)
+
+    void  DLL_INSERT_BEFORE_NP (T* first, T* last, T* ref_node, T* node, next, prev)
+
+    void  DLL_REMOVE_NP        (T* first, T* last, T* node, next, prev)
+    void  DLL_REMOVE_FIRST_NP  (T* first, T* last, next, prev)
+    void  DLL_REMOVE_LAST_NP   (T* first, T* last, next, prev)
 
 */
+
 
 #ifndef _DLL_H
 #define _DLL_H
