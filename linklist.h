@@ -1,14 +1,7 @@
 
-/* dll.h - doubly-linked list macros
+/* linklist.h - intrusive linked list data structure macros
 
-COMPILE-TIME OPTIONS
-
-  #define DLL_UNIT_TESTS
-
-     Defines dll_unit_tests() which verifies the functionality of the data structure.
-
-
-DOCUMENTATION
+DOUBLY-LINKED LIST DOCUMENTATION
 
   Declare a node type with the following structure:
 
@@ -53,27 +46,67 @@ DOCUMENTATION
     void  DLL_REMOVE_FIRST_NP  (T* first, T* last, next, prev)
     void  DLL_REMOVE_LAST_NP   (T* first, T* last, next, prev)
 
+
+STACK DOCUMENTATION
+
+  Declare a node type with the following structure:
+
+    typedef struct T T;
+    struct T
+    {
+        // user-defined data here
+        ...
+        T* next;
+    };
+
+  Declare an empty stack head:
+
+    T* t_head = NULL;
+
+
+    void  STACK_PUSH    (T* head, T* node)     - Pushes node onto the top of the stack
+    void  STACK_POP     (T* head)              - Removes the top node from the stack. The removed node is not returned.
+
+
+  The macros above assume each node contains a pointer named "next".
+  The macros below allow a different field name to be specified.
+
+    void  STACK_PUSH_N  (T* head, T* node, next)
+    void  STACK_POP_N   (T* head, next)
+
+
+QUEUE DOCUMENTATION
+
+  Declare a node type with the following structure:
+
+    typedef struct T T;
+    struct T
+    {
+        // user-defined data here
+        ...
+        T* next;
+    };
+
+  Declare an empty queue:
+
+    T* t_first = NULL;
+    T* t_last  = NULL;
+
+
+    void  QUEUE_PUSH    (T* first, T* last, T* node)    - Pushes node onto the back of the queue
+    void  QUEUE_POP     (T* first, T* last)             - Removes the front node from the queue. The removed node is not returned.
+
+
+  The macros above assume each node contains a pointer named "next".
+  The macros below allow a different field name to be specified.
+
+    void  QUEUE_PUSH_N  (T* first, T* last, T* node, next)
+    void  QUEUE_POP_N   (T* first, T* last, next)
+
 */
 
-
-#ifndef _DLL_H
-#define _DLL_H
-
-//***************************************************************************
-//          INCLUDE FILES
-//***************************************************************************
-
-// TODO(bcall): dll_unit_tests()
-
-//***************************************************************************
-//          FUNCTION PROTOTYPES
-//***************************************************************************
-
-// TODO(bcall): dll_unit_tests()
-
-//***************************************************************************
-//          MACROS
-//***************************************************************************
+#ifndef _LINKLIST_H
+#define _LINKLIST_H
 
 #define DLL_PUSH_BACK_NP(first, last, node, next, prev)                     \
     ((first) == NULL ?                                                      \
@@ -109,7 +142,6 @@ DOCUMENTATION
     ((node)->next->prev = (node)->prev,                                     \
     (node)->prev->next = (node)->next))
 
-
 #define DLL_PUSH_BACK(first, last, node)                  DLL_PUSH_BACK_NP(first, last, node, next, prev)
 #define DLL_PUSH_FRONT(first, last, node)                 DLL_PUSH_FRONT_NP(first, last, node, next, prev)
 #define DLL_INSERT_AFTER(first, last, ref_node, node)     DLL_INSERT_AFTER_NP(first, last, ref_node, node, next, prev)
@@ -118,4 +150,29 @@ DOCUMENTATION
 #define DLL_REMOVE_FIRST(first, last)                     DLL_REMOVE_FIRST_NP(first, last, next, prev)
 #define DLL_REMOVE_LAST(first, last)                      DLL_REMOVE_LAST_NP(first, last, next, prev)
 
-#endif // _DLL_H
+
+#define STACK_PUSH_N(first, node, next)                                     \
+    ((node)->next = (first), (first) = (node))
+
+#define STACK_POP_N(first, next)                                            \
+    ((first) = (first)->next)
+
+#define STACK_PUSH(first, node)   STACK_PUSH_N(first, node, next)
+#define STACK_POP(first)          STACK_POP_N(first, next)
+
+
+#define QUEUE_PUSH_N(first, last, node, next)                               \
+    ((first) == NULL ?                                                      \
+    ((first) = (last) = (node), (node)->next = NULL) :                      \
+    ((last)->next = (node), (last) = (node), (node)->next = NULL))
+
+#define QUEUE_POP_N(first, last, next)                                      \
+    ((first) == (last) ?                                                    \
+    (first) = (last) = NULL :                                               \
+    ((first) = (first)->next))
+
+#define QUEUE_PUSH(first, last, node)   QUEUE_PUSH_N(first, last, node, next)
+#define QUEUE_POP(first, last)          QUEUE_POP_N(first, last, next) 
+
+
+#endif // _LINKLIST_H

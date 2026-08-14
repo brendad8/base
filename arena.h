@@ -1,14 +1,105 @@
 
+/* arena.h - virtual memory backed arena allocator
+
+   To use this library, do this in *one* C file:
+      #define ARENA_IMPLEMENTATION
+      #include "base/arena.h"
+
+
+COMPILE-TIME OPTIONS
+
+  #define ARENA_EXPORT
+
+     Declares the export/import specifier used for all public functions.
+     Leave undefined for normal static builds or redefine when building
+     as part of a shared library.
+
+  #define ARENA_UNIT_TESTS
+
+     Defines arena_unit_tests() which verifies allocator functionality.
+
+
+DOCUMENTATION
+
+  Create an arena using default settings:
+    Arena* arena = arena_alloc((ArenaParams){0});
+
+
+  Create an arena with custom reserve/commit sizes:
+
+    ArenaParams params = {
+        .commit_size  = 64 * 1024,           // 64 KB initial size
+        .reserve_size = 64 * 1024 * 1024,    // 64 MB maximum size
+    };
+    Arena* arena = arena_alloc(params);
+
+
+  Create an arena using a user supplied memory buffer:
+
+    ArenaParams params = {
+        .backing_memory = buffer,
+        .reserve_size   = sizeof(buffer),
+    };
+    Arena* arena = arena_alloc(params);
+
+
+  Arena*    arena_alloc                 (ArenaParams params)                              - Creates a new arena
+  void      arena_release               (Arena* arena)                                    - Releases arena resources
+
+  uint64_t  arena_position              (Arena* arena)                                    - Returns current allocation position
+  uint64_t  arena_committed             (Arena* arena)                                    - Returns committed memory size
+  uint64_t  arena_reserved              (Arena* arena)                                    - Returns reserved memory size
+
+  void*     arena_push                  (Arena* arena, uint64_t size)                     - Allocates zero-initialized memory
+  void*     arena_push_no_zero          (Arena* arena, uint64_t size)                     - Allocates uninitialized memory
+
+  void*     arena_push_align            (Arena* arena, uint64_t size, uint64_t align)     - Allocates aligned zero-initialized memory
+  void*     arena_push_align_no_zero    (Arena* arena, uint64_t size, uint64_t align)     - Allocates aligned uninitialized memory
+
+  void      arena_pop                   (Arena* arena, uint64_t size)                     - Frees the last size bytes allocated
+  void      arena_pop_to                (Arena* arena, uint64_t pos)                      - Restores arena to a previous position
+  void      arena_clear                 (Arena* arena)                                    - Clears all allocations
+
+  T*        ARENA_PUSH_ARRAY            (Arena*, T, count)                                - Allocates a zero-initialized array of T
+  T*        ARENA_PUSH_ARRAY_NO_ZERO    (Arena*, T, count)                                - Allocates an uninitialized array of T
+
+  T*        ARENA_PUSH_STRUCT           (Arena*, T)                                       - Allocates one zero-initialized structure
+  T*        ARENA_PUSH_STRUCT_NO_ZERO   (Arena*, T)                                       - Allocates one uninitialized structure
+
+  ArenaTemp arena_temp_begin            (Arena* arena)                                    - Begins a temporary allocation scope
+  void      arena_temp_end              (ArenaTemp temp)                                  - Restores arena to the saved scope
+
+
+TEMPORARY ALLOCATIONS
+
+  Temporary arenas provide an easy way to allocate scratch memory.
+
+    ArenaTemp temp = arena_temp_begin(arena);
+
+    Foo* foo = ARENA_PUSH_STRUCT(arena, Foo);
+    Bar* bar = ARENA_PUSH_ARRAY(arena, Bar, 128);
+
+    arena_temp_end(temp);
+
+  All allocations made after arena_temp_begin() are discarded when
+  arena_temp_end() is called.
+
+
+BACKING MEMORY
+
+  If ArenaParams.backing_memory is supplied, the arena uses the provided
+  memory buffer instead of reserving virtual memory from the operating
+  system.
+
+  In this mode:
+    * The arena cannot grow beyond reserve_size.
+    * arena_release() does not free the backing buffer.
+    * The caller is responsible for managing the backing memory.
+
+*/
+
 #ifndef _ARENA_H
 #define _ARENA_H
-
-//***************************************************************************
-//          CONFIGURATION OPTIONS
-//***************************************************************************
-
-#ifndef ARENA_EXPORT
-#define ARENA_EXPORT
-#endif
 
 //***************************************************************************
 //          INCLUDE FILES
@@ -24,9 +115,9 @@
 typedef struct ArenaParams ArenaParams;
 struct ArenaParams
 {
-    uint8_t* backing_memory; // backing memory to use for arena instead of committing mem from os
     uint64_t commit_size;    // size of memory chunks when committing memory from os
     uint64_t reserve_size;   // size of vmemory address space when reserving memory from os or capacity of backing memory
+    uint8_t* backing_memory; // backing memory to use for arena instead of committing mem from os
 };
 
 typedef struct Arena Arena;
@@ -60,6 +151,10 @@ struct ArenaTemp
 //          FUNCTION PROTOTYPES
 //***************************************************************************
 
+#ifndef ARENA_EXPORT
+#define ARENA_EXPORT
+#endif
+
 ARENA_EXPORT Arena*    arena_alloc              (ArenaParams);
 ARENA_EXPORT void      arena_release            (Arena* arena);
 
@@ -88,6 +183,8 @@ ARENA_EXPORT void      arena_temp_end           (ArenaTemp temp);
 
 #ifdef ARENA_IMPLEMENTATION
 
+#include <string.h>
+
 static const uint64_t arena_default_alignment    = sizeof(void*);
 static const uint64_t arena_default_commit_size  = (((uint64_t)64) << 10); // 64 KB
 static const uint64_t arena_default_reserve_size = (((uint64_t)64) << 20); // 64 MB
@@ -114,21 +211,26 @@ static  void               vm_release    (void* ptr, uint64_t size);
 /*********************************************************************************/
 ARENA_EXPORT Arena* arena_alloc(ArenaParams params)
 {
-    void* base;
+    Arena* arena;
 
     if (params.backing_memory)
     {
         if (params.reserve_size == 0)
             return NULL;
 
-        base = params.backing_memory;
+        arena = (Arena*)params.backing_memory;
+        arena->base = (uint8_t*)arena;
+        arena->pos = sizeof(Arena);
+        arena->committed = params.reserve_size;
+        arena->reserved = params.reserve_size;
+        arena->commit_size = 0;
     }
     else
     {
-        if (params.commit_size <= 0)
-            params.commit_size = arena_default_commit_size;
+        if (params.commit_size <= 0)  
+            params.commit_size  = arena_default_commit_size;
 
-        if (params.reserve_size <= 0)
+        if (params.reserve_size <= 0) 
             params.reserve_size = arena_default_reserve_size;
 
         VirtualMemoryInfo info = vm_get_info();
@@ -136,23 +238,15 @@ ARENA_EXPORT Arena* arena_alloc(ArenaParams params)
         params.commit_size  = __ARENA_ALIGN_UP_POW2(params.commit_size, info.page_size);
         params.reserve_size = __ARENA_ALIGN_UP_POW2(params.reserve_size, info.allocation_granularity);
 
-        base = vm_reserve(params.reserve_size);
-        if (!vm_commit(base, params.commit_size)) return NULL;
-    }
+        void* base = vm_reserve(params.reserve_size);
+        if (!vm_commit(base, params.commit_size)) 
+            return NULL;
 
-    Arena* arena = (Arena*)base;
-    arena->base = (uint8_t*)arena;
-    arena->pos = sizeof(Arena);
-    arena->reserved = params.reserve_size;
-
-    if (params.backing_memory)
-    {
-        arena->committed = params.reserve_size;
-        arena->commit_size = 0;
-    }
-    else
-    {
+        arena = (Arena*)base;
+        arena->base = (uint8_t*)arena;
+        arena->pos = sizeof(Arena);
         arena->committed = params.commit_size;
+        arena->reserved = params.reserve_size;
         arena->commit_size = params.commit_size;
     }
 
@@ -163,9 +257,9 @@ ARENA_EXPORT Arena* arena_alloc(ArenaParams params)
 ARENA_EXPORT void arena_release(Arena* arena)
 {
     // NOTE(bcall): only release memory when not given a backing buffer
-    // if given a backing buffer, user responsible for freeing
-    // if (arena->commit_size != 0)
-    vm_release(arena, arena->reserved);
+    // if given a backing buffer, user responsible for freeing...
+    if (arena->commit_size != 0)
+        vm_release(arena, arena->reserved);
 }
 
 
@@ -190,7 +284,9 @@ ARENA_EXPORT static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t 
             // NOTE(bcall): commit new memory starting from end of 
             // initially commited region
             uint8_t* commit_end_ptr = arena->base + arena->committed;
-            if (!vm_commit(commit_end_ptr, commit_size)) return NULL;
+            if (!vm_commit(commit_end_ptr, commit_size)) 
+                return NULL;
+
             arena->committed += commit_size;
         }
         else
@@ -375,3 +471,155 @@ vm_release(void* ptr, uint64_t size)
 #endif // virtual memory implementation
 
 #endif // ARENA_IMPLEMENTATION
+
+#ifdef ARENA_UNIT_TESTS
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+static bool is_aligned(void* ptr, uint64_t align)
+{
+    return (((uintptr_t)ptr) & (align - 1)) == 0;
+}
+
+typedef struct
+{
+    int x;
+    double y;
+
+} TestStruct;
+
+void arena_unit_tests(void)
+{
+    ArenaParams params = {0};
+    Arena* arena = arena_alloc(params);
+    assert(arena->committed == arena_default_commit_size);
+    assert(arena->reserved == arena_default_reserve_size);
+    uint64_t start = arena->pos;
+    void* p1 = arena_push(arena, 64);
+    assert(p1 != NULL);
+    assert(arena->pos >= start + 64);
+    arena_release(arena);
+
+
+    ArenaParams params = { .commit_size = KB(4), .reserve_size = KB(64) };
+    arena = arena_alloc(params);
+    char* ptr = arena_push(arena, KB(5));
+    assert(ptr != NULL);
+    assert(arena->committed == KB(8));
+    arena_release(arena);
+    
+
+    arena = arena_alloc((ArenaParams){0});
+    uint64_t aligns[] = {1,2,4,8,16,32,64};
+    for(uint64_t i = 0; i < ARRAY_COUNT(aligns); i++)
+    {
+        uint64_t align = aligns[i];
+        void* ptr = arena_push_align(arena, 13, align);
+        assert(is_aligned(ptr, align));
+    }
+    arena_release(arena);
+  
+
+    arena = arena_alloc((ArenaParams){0});
+    uint8_t* mem = ARENA_PUSH_ARRAY(arena, uint8_t, 128);
+    for(uint64_t i = 0; i < 128; i++)
+        assert(mem[i] == 0);
+    arena_release(arena);
+
+
+    arena = arena_alloc((ArenaParams){0});
+    uint64_t start = arena->pos;
+    arena_push(arena, 128);
+    arena_pop(arena, 128);
+    assert(arena->pos == start);
+    arena_release(arena);
+    
+
+    arena = arena_alloc((ArenaParams){0});
+    arena_push(arena, 64);
+    uint64_t mark = arena->pos;
+    arena_push(arena, 256);
+    arena_pop_to(arena, mark);
+    assert(arena->pos == mark);
+    arena_release(arena);
+
+
+    arena = arena_alloc((ArenaParams){0});
+    arena_push(arena, 1024);
+    arena_clear(arena);
+    assert(arena->pos == sizeof(Arena));
+    arena_release(arena);
+
+
+    arena = arena_alloc((ArenaParams){0});
+    uint64_t start = arena->pos;
+    ArenaTemp temp = arena_temp_begin(arena);
+    arena_push(arena, 512);
+    assert(arena->pos > start);
+    arena_temp_end(temp);
+    assert(arena->pos == start);
+    arena_release(arena);
+
+
+    arena = arena_alloc((ArenaParams){0});
+    uint64_t start = arena->pos;
+    ArenaTemp t1 = arena_temp_begin(arena);
+    arena_push(arena, 64);
+    uint64_t p1 = arena->pos;
+    ArenaTemp t2 = arena_temp_begin(arena);
+    arena_push(arena, 128);
+    arena_temp_end(t2);
+    assert(arena->pos == p1);
+    arena_temp_end(t1);
+    assert(arena->pos == start);
+    arena_release(arena);
+
+
+    ArenaParams params = {0};
+    params.commit_size = KB(4);
+    arena = arena_alloc(params);
+    uint64_t initial_commit = arena->committed;
+    assert(initial_commit = KB(4));
+    arena_push(arena, KB(5));
+    assert(arena->committed > initial_commit);
+    arena_release(arena);
+
+
+    ArenaParams params = {0};
+    params.reserve_size = MB(1);
+    arena = arena_alloc(params);
+    void* ptr = arena_push(arena, MB(2));
+    assert(ptr == 0);
+    arena_release(arena);
+
+
+    arena = arena_alloc((ArenaParams){0});
+    TestStruct* s = ARENA_PUSH_STRUCT(arena, TestStruct);
+    assert(s != 0);
+    arena_release(arena);
+
+
+    arena = arena_alloc((ArenaParams){0});
+    for(uint64_t i = 0; i < 100; i++)
+    {
+        uint64_t size  = (i % 256) + 1;
+        uint64_t align = 1ULL << (i % 6);
+        void* ptr = arena_push_align(arena, size, align);
+        assert(ptr != 0);
+        assert(is_aligned(ptr, align));
+    }
+    arena_release(arena);
+
+
+    arena = arena_alloc((ArenaParams){.commit_size = KB(64), .reserve_size = KB(64)});
+    char* ptr = arena_push(arena, GB(1));
+    assert(ptr == NULL);
+    arena_release(arena);
+
+    // TODO(bcall): test supllied backing buffer!!!
+
+}
+
+#endif

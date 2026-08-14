@@ -1,18 +1,72 @@
 
-// PCG Random Number Generation for C.
-//
-// Copyright 2014 Melissa O'Neill <oneill@pcg-random.org>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Modified by Brendan Callender to add implementations 
-// for uniform, normal, exponential, poisson, bernoulli, 
-// and binomial distributions
+/* rand.h - pseudo-random number generator and probability distributions
 
+   To use this library, do this in *one* C file:
+      #define RAND_IMPLEMENTATION
+      #include "base/rand.h"
+
+
+ACKNOWLEDGMENTS
+
+   PCG Random Number Generation for C.
+   Copyright 2014 Melissa O'Neill <oneill@pcg-random.org>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+
+COMPILE-TIME OPTIONS
+
+  #define RAND_EXPORT
+
+     Declares the export/import specifier used for all public functions.
+     Leave undefined for normal static builds or redefine when building
+     as part of a shared library.
+
+
+DOCUMENTATION
+
+  Seed the generator before use:
+    rand_seed(42, 54);
+
+  Generate random values:
+
+    uint32_t i = rand_int();
+    float u = rand_unif();
+
+
+  void      rand_seed   (uint64_t initstate, uint64_t initseq)    - Seeds the pseudo-random number generator
+
+  uint32_t  rand_int    (void)                                    - Returns a uniformly distributed 32-bit unsigned integer
+
+  float     rand_unif   (void)                                    - Returns a uniformly distributed float in the range [0, 1]
+  float     rand_norm   (float mu, float sigma)                   - Returns a normally distributed random value with mean mu and standard deviation sigma
+  float     rand_exp    (float lambda)                            - Returns an exponentially distributed random value with rate lambda
+  uint32_t  rand_pois   (float mu)                                - Returns a Poisson distributed random value with mean mu
+  bool      rand_bern   (float p)                                 - Returns true with probability p and false otherwise
+  uint32_t  rand_binom  (uint32_t n, float p)                     - Returns a binomially distributed random value for n trials with success probability p
+
+
+NOTES
+
+  The library maintains a single global pseudo-random number generator.
+  All public functions operate on this shared state.
+
+  The generator is based on the PCG family of random number generators
+  and provides fast, high-quality random numbers suitable for simulations,
+  games, procedural generation, and general-purpose use.
+
+  Distribution implementations:
+
+    rand_unif()  - Uniform distribution over [0,1]
+    rand_norm()  - Normal (Gaussian) distribution using the Box-Muller transform
+    rand_exp()   - Exponential distribution using inverse transform sampling
+    rand_pois()  - Poisson distribution using exponential inter-arrival times
+    rand_bern()  - Bernoulli distribution
+    rand_binom() - Binomial distribution implemented as repeated Bernoulli trials
+
+*/
 
 #ifndef RAND_H
 #define RAND_H

@@ -5,14 +5,14 @@ COMPILE-TIME OPTIONS
 
   #define STACK_UNIT_TESTS
 
-     Defines a function stack_unit_tests() that checks the functionality of the data structure.
+     Defines stack_unit_tests() which verifies the functionality of the data structure.
 
 
 DOCUMENTATION
 
   Declare a node type with the following structure:
 
-    typedef struct T T; 
+    typedef struct T T;
     struct T
     {
         // user-defined data here
@@ -20,22 +20,22 @@ DOCUMENTATION
         T* next;
     };
 
-  Declare an empty head for a stack of type T:
+  Declare an empty stack head:
 
     T* t_head = NULL;
 
 
-    void  STACK_PUSH    (T* first, T* node)    - Pushes node to front of stack
-    void  STACK_POP     (T* first)             - Pops node from front of stack. Node is not returned         
+    void  STACK_PUSH    (T* head, T* node)     - Pushes node onto the top of the stack
+    void  STACK_POP     (T* head)              - Removes the top node from the stack. The removed node is not returned.
 
-    The macros above assume the nodes reference other nodes with a field named "next".
-    The macros below allow for the user to specify the names of the field for "next".
 
-    void  STACK_PUSH_N  (T* first, T* node, Text next)   
-    void  STACK_POP_N   (T* first, Text next)            
+  The macros above assume each node contains a pointer named "next".
+  The macros below allow a different field name to be specified.
+
+    void  STACK_PUSH_N  (T* head, T* node, next)
+    void  STACK_POP_N   (T* head, next)
 
 */
-
 
 #ifndef _STACK_H
 #define _STACK_H
