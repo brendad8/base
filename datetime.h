@@ -1,5 +1,10 @@
 
 #ifndef DATETIME_H
+#define DATETIME_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
 #include <stdio.h>
@@ -20,7 +25,7 @@ typedef struct
 typedef int64_t DenseTime; // milli seconds since 0001-01-01 00:00:00.000
 
 typedef int DayOfWeek;
-enum 
+enum
 {
     DOW_SUN = 0,
     DOW_MON,
@@ -49,6 +54,10 @@ int64_t     date_time_diff_ms       (DateTime a, DateTime b);
 
 #define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%d"
 #define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.milli
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // DATETIME_H
 

@@ -4,113 +4,17 @@
    To use this library, do this in *one* C file:
       #define ARENA_IMPLEMENTATION
       #include "base/arena.h"
-
-
-COMPILE-TIME OPTIONS
-
-  #define ARENA_EXPORT
-
-     Declares the export/import specifier used for all public functions.
-     Leave undefined for normal static builds or redefine when building
-     as part of a shared library.
-
-  #define ARENA_UNIT_TESTS
-
-     Defines arena_unit_tests() which verifies allocator functionality.
-
-
-DOCUMENTATION
-
-  Create an arena using default settings:
-    Arena* arena = arena_alloc((ArenaParams){0});
-
-
-  Create an arena with custom reserve/commit sizes:
-
-    ArenaParams params = {
-        .commit_size  = 64 * 1024,           // 64 KB initial size
-        .reserve_size = 64 * 1024 * 1024,    // 64 MB maximum size
-    };
-    Arena* arena = arena_alloc(params);
-
-
-  Create an arena using a user supplied memory buffer:
-
-    ArenaParams params = {
-        .backing_memory = buffer,
-        .reserve_size   = sizeof(buffer),
-    };
-    Arena* arena = arena_alloc(params);
-
-
-  Arena*    arena_alloc                 (ArenaParams params)                              - Creates a new arena
-  void      arena_release               (Arena* arena)                                    - Releases arena resources
-
-  uint64_t  arena_position              (Arena* arena)                                    - Returns current allocation position
-  uint64_t  arena_committed             (Arena* arena)                                    - Returns committed memory size
-  uint64_t  arena_reserved              (Arena* arena)                                    - Returns reserved memory size
-
-  void*     arena_push                  (Arena* arena, uint64_t size)                     - Allocates zero-initialized memory
-  void*     arena_push_no_zero          (Arena* arena, uint64_t size)                     - Allocates uninitialized memory
-
-  void*     arena_push_align            (Arena* arena, uint64_t size, uint64_t align)     - Allocates aligned zero-initialized memory
-  void*     arena_push_align_no_zero    (Arena* arena, uint64_t size, uint64_t align)     - Allocates aligned uninitialized memory
-
-  void      arena_pop                   (Arena* arena, uint64_t size)                     - Frees the last size bytes allocated
-  void      arena_pop_to                (Arena* arena, uint64_t pos)                      - Restores arena to a previous position
-  void      arena_clear                 (Arena* arena)                                    - Clears all allocations
-
-  T*        ARENA_PUSH_ARRAY            (Arena*, T, count)                                - Allocates a zero-initialized array of T
-  T*        ARENA_PUSH_ARRAY_NO_ZERO    (Arena*, T, count)                                - Allocates an uninitialized array of T
-
-  T*        ARENA_PUSH_STRUCT           (Arena*, T)                                       - Allocates one zero-initialized structure
-  T*        ARENA_PUSH_STRUCT_NO_ZERO   (Arena*, T)                                       - Allocates one uninitialized structure
-
-  ArenaTemp arena_temp_begin            (Arena* arena)                                    - Begins a temporary allocation scope
-  void      arena_temp_end              (ArenaTemp temp)                                  - Restores arena to the saved scope
-
-
-TEMPORARY ALLOCATIONS
-
-  Temporary arenas provide an easy way to allocate scratch memory.
-
-    ArenaTemp temp = arena_temp_begin(arena);
-
-    Foo* foo = ARENA_PUSH_STRUCT(arena, Foo);
-    Bar* bar = ARENA_PUSH_ARRAY(arena, Bar, 128);
-
-    arena_temp_end(temp);
-
-  All allocations made after arena_temp_begin() are discarded when
-  arena_temp_end() is called.
-
-
-BACKING MEMORY
-
-  If ArenaParams.backing_memory is supplied, the arena uses the provided
-  memory buffer instead of reserving virtual memory from the operating
-  system.
-
-  In this mode:
-    * The arena cannot grow beyond reserve_size.
-    * arena_release() does not free the backing buffer.
-    * The caller is responsible for managing the backing memory.
-
 */
 
-#ifndef _ARENA_H
-#define _ARENA_H
+#ifndef ARENA_H
+#define ARENA_H
 
-//***************************************************************************
-//          INCLUDE FILES
-//***************************************************************************
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <stddef.h> // for NULL
-#include <stdint.h> // for uint8_t, uint64_t
-
-//***************************************************************************
-//          TYPES
-//***************************************************************************
+#include <stddef.h>
+#include <stdint.h>
 
 typedef struct ArenaParams ArenaParams;
 struct ArenaParams
@@ -137,20 +41,6 @@ struct ArenaTemp
     uint64_t pos;   // base position when created
 };
 
-//***************************************************************************
-//          MACROS
-//***************************************************************************
-
-#define ARENA_PUSH_ARRAY(arena, type, count)         (type*)arena_push((arena), sizeof(type)*(count))
-#define ARENA_PUSH_ARRAY_NO_ZERO(arena, type, count) (type*)arena_push_no_zero((arena), sizeof(type)*(count))
-
-#define ARENA_PUSH_STRUCT(arena, type)               (type*)arena_push((arena), sizeof(type))
-#define ARENA_PUSH_STRUCT_NO_ZERO(arena, type)       (type*)arena_push_no_zero((arena), sizeof(type))
-
-//***************************************************************************
-//          FUNCTION PROTOTYPES
-//***************************************************************************
-
 #ifndef ARENA_EXPORT
 #define ARENA_EXPORT
 #endif
@@ -175,11 +65,17 @@ ARENA_EXPORT void      arena_clear              (Arena* arena);
 ARENA_EXPORT ArenaTemp arena_temp_begin         (Arena* arena);
 ARENA_EXPORT void      arena_temp_end           (ArenaTemp temp);
 
-#endif // _ARENA_H
+#define ARENA_PUSH_ARRAY(arena, type, count)         (type*)arena_push((arena), sizeof(type)*(count))
+#define ARENA_PUSH_ARRAY_NO_ZERO(arena, type, count) (type*)arena_push_no_zero((arena), sizeof(type)*(count))
 
-//***************************************************************************
-//          IMPLEMENTATION
-//***************************************************************************
+#define ARENA_PUSH_STRUCT(arena, type)               (type*)arena_push((arena), sizeof(type))
+#define ARENA_PUSH_STRUCT_NO_ZERO(arena, type)       (type*)arena_push_no_zero((arena), sizeof(type))
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // ARENA_H
 
 #ifdef ARENA_IMPLEMENTATION
 
@@ -208,7 +104,6 @@ static  bool               vm_commit     (void* ptr, uint64_t size);
 static  bool               vm_decommit   (void* ptr, uint64_t size);
 static  void               vm_release    (void* ptr, uint64_t size);
 
-/*********************************************************************************/
 ARENA_EXPORT Arena* arena_alloc(ArenaParams params)
 {
     Arena* arena;
@@ -253,7 +148,6 @@ ARENA_EXPORT Arena* arena_alloc(ArenaParams params)
     return arena;
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void arena_release(Arena* arena)
 {
     // NOTE(bcall): only release memory when not given a backing buffer
@@ -262,8 +156,6 @@ ARENA_EXPORT void arena_release(Arena* arena)
         vm_release(arena, arena->reserved);
 }
 
-
-/*********************************************************************************/
 ARENA_EXPORT static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool zero)
 {
     uint64_t new_pos = __ARENA_ALIGN_UP_POW2(arena->pos, align);
@@ -302,31 +194,26 @@ ARENA_EXPORT static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t 
     return result;
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void* arena_push(Arena* arena, uint64_t size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 1);
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void* arena_push_no_zero(Arena* arena, uint64_t size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 0);
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void* arena_push_align(Arena* arena, uint64_t size, uint64_t align)
 {
     return arena_push_impl(arena, size, align, 1);
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align)
 {
     return arena_push_impl(arena, size, align, 0);
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void arena_pop_to(Arena* arena, uint64_t new_pos)
 {
     uint64_t pos = arena->pos;
@@ -334,7 +221,6 @@ ARENA_EXPORT void arena_pop_to(Arena* arena, uint64_t new_pos)
     arena->pos = new_pos;
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void arena_pop(Arena* arena, uint64_t size)
 {
     uint64_t pos = arena->pos;
@@ -342,26 +228,22 @@ ARENA_EXPORT void arena_pop(Arena* arena, uint64_t size)
     arena_pop_to(arena, pos_new);
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void arena_clear(Arena* arena)
 {
     arena_pop_to(arena, 0);
 }
 
-/*********************************************************************************/
 ARENA_EXPORT ArenaTemp arena_temp_begin(Arena* arena)
 {
     ArenaTemp temp = {arena, arena->pos};
     return temp;
 }
 
-/*********************************************************************************/
 ARENA_EXPORT void arena_temp_end(ArenaTemp temp)
 {
     arena_pop_to(temp.arena, temp.pos);
 }
 
-/*********************************************************************************/
 #if defined(_WIN32)
 #include <windows.h>
 
@@ -429,9 +311,7 @@ void* vm_reserve(uint64_t size)
 {
     VirtualMemoryInfo info = vm_get_info();
     size = __ARENA_ALIGN_UP_POW2(size, info.allocation_granularity);
-
     void* ptr = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
     if (ptr == MAP_FAILED)
         return NULL;
 
@@ -442,7 +322,6 @@ bool vm_commit(void* ptr, uint64_t size)
 {
     VirtualMemoryInfo info = vm_get_info();
     size = __ARENA_ALIGN_UP_POW2(size, info.page_size);
-
     int result = mprotect(ptr, size, PROT_READ | PROT_WRITE);
 
     return (result == 0);
@@ -451,24 +330,22 @@ bool vm_commit(void* ptr, uint64_t size)
 bool vm_decommit(void* ptr, uint64_t size)
 {
     VirtualMemoryInfo info = vm_get_info();
-
     size = __ARENA_ALIGN_UP_POW2(size, info.page_size);
-
-    // Return pages to OS. Memory remains mapped.
     int result = madvise(ptr, size, MADV_DONTNEED);
-
-    // Make inaccessible again to emulate reserve state.
     mprotect(ptr, size, PROT_NONE);
 
     return (result == 0);
 }
 
-vm_release(void* ptr, uint64_t size)
+void vm_release(void* ptr, uint64_t size)
 {
     munmap(ptr, size);
 }
 
-#endif // virtual memory implementation
+#endif
+
+#undef __ARENA_ALIGN_UP_POW2
+#undef __ARENA_CLAMP
 
 #endif // ARENA_IMPLEMENTATION
 
@@ -617,9 +494,6 @@ void arena_unit_tests(void)
     char* ptr = arena_push(arena, GB(1));
     assert(ptr == NULL);
     arena_release(arena);
-
-    // TODO(bcall): test supllied backing buffer!!!
-
 }
 
-#endif
+#endif // ARENA_UNIT_TESTS
