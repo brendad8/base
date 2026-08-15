@@ -1,13 +1,10 @@
 
 #include <stdarg.h>
 
-#include "base_core.h"
-#include "base_string.h"
-#include "base_arena.h"
-#include "base_ds.h"
+#include "str.h"
 
-#define STB_SPRINTF_IMPLEMENTATION
-#include "deps/stb_sprintf.h"
+// #define STB_SPRINTF_IMPLEMENTATION
+// #include "deps/stb_sprintf.h"
 
 /*********************************************************************************/
 string str_new(char* ptr, size_t len) 
@@ -493,5 +490,4 @@ size_t cstr_length(char* c)
     return len;
 }
 
-
-
+       

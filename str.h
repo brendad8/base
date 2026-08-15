@@ -1,4 +1,3 @@
-
 #ifndef BASE_STRING_H
 #define BASE_STRING_H
 
@@ -79,25 +78,6 @@ string      str_trim                 (string s);
 string      str_trim_left            (string s);
 string      str_trim_right           (string s);
 
-// Non-arena versions, where user provides memmory
-// NOTE(bcall): +1 for null terminating strings...
-// str_copy - len(buf) = s.len + 1;
-// str_cat  - len(buf) = a.len + b.len + 1;
-// str_to_lower - len(buf) = s.len + 1
-// str_to_upper - len(buf) = s.len + 1
-
-// string      str_copy                 (char* buf, string s);
-// string      str_cat                  (char* buf, string a, string b);
-//
-// string      str_printfv              (char* buf, char* fmt, va_list args);
-// string      str_printf               (char* buf, char *fmt, ...);
-//
-// string      str_to_lower             (char* buf, string string);
-// string      str_to_upper             (char* buf, string string);
-//
-// StringList  str_split                (char* buf, string s, string delim);
-// StringList  str_split_skip_empty     (char* buf, string s, string delim);
-
 string      str_copy                 (Arena *arena, string s);
 string      str_cat                  (Arena *arena, string a, string b);
 
@@ -123,4 +103,7 @@ size_t      cstr_length              (char* c);
 
 
 #endif // BASE_STRING_H
+
+
+#ifdef STR_IMPLEMENTATION
 
