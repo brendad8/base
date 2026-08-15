@@ -48,7 +48,7 @@ bool        date_time_equal         (DateTime a, DateTime b);
 int64_t     date_time_diff_ms       (DateTime a, DateTime b);
 
 #define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%d"
-#define DATETIME_ARGS(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.milli
+#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.milli
 
 #endif // DATETIME_H
 
