@@ -22,37 +22,58 @@ typedef int64_t DenseTime; // milli seconds since 0001-01-01 00:00:00.000
 typedef int DayOfWeek;
 enum 
 {
-    DT_DOW_SUN = 0,
-    DT_DOW_MON,
-    DT_DOW_TUE,
-    DT_DOW_WED,
-    DT_DOW_THU,
-    DT_DOW_FRI,
-    DT_DOW_SAT,
+    DOW_SUN = 0,
+    DOW_MON,
+    DOW_TUE,
+    DOW_WED,
+    DOW_THU,
+    DOW_FRI,
+    DOW_SAT,
 };
 
-DenseTime date_time_to_dense      (DateTime dt);
-DateTime  date_time_add_millis    (DateTime dt, int millis);
-DateTime  date_time_add_secs      (DateTime dt, int secs);
-DateTime  date_time_add_mins      (DateTime dt, int mins);
-DateTime  date_time_add_days      (DateTime dt, int days);
-DayOfWeek date_time_day_of_week   (DateTime dt);
+DenseTime   date_time_to_dense      (DateTime dt);
+DateTime    dense_time_to_date      (DenseTime dense);
 
-int64_t   date_time_diff_ms       (DateTime a, DateTime b);
-DateDiff  date_time_diff          (DateTime a, DateTime b);
+DateTime    date_time_now_utc       (void);
+DateTime    date_time_now_local     (void);
 
-DateTime  dense_time_to_date      (DenseTime dense);
+DateTime    date_time_add_millis    (DateTime dt, int millis);
+DateTime    date_time_add_secs      (DateTime dt, int secs);
+DateTime    date_time_add_mins      (DateTime dt, int mins);
+DateTime    date_time_add_days      (DateTime dt, int days);
+
+DayOfWeek   date_time_day_of_week   (DateTime dt);
+
+bool        date_time_equal         (DateTime a, DateTime b);
+int64_t     date_time_diff_ms       (DateTime a, DateTime b);
+
+#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%d"
+#define DATETIME_ARGS(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.milli
 
 #endif // DATETIME_H
 
 
 #ifdef DATETIME_IMPLEMENTATION
 
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <time.h>
+    #include <sys/time.h>
+#endif
+
 #define DT_DAY_TO_MS 86400000LL
 #define DT_HOUR_TO_MS 3600000LL
 #define DT_MIN_TO_MS 60000LL
 #define DT_SEC_TO_MS 1000LL
 #define DT_DAYS_PER_400_YEARS 146097LL
+
+static const DateTime dt_unix_epoch = {
+    .year = 1970,
+    .month = 1,
+    .day = 1
+};
+static const DenseTime dense_unix_epoch = 62135596800000;
 
 static const int64_t dt_days_in_year[2] = { 365, 366 };        // { non-leap, leap }
                                                               
@@ -177,12 +198,81 @@ DateTime date_time_add_days(DateTime dt, int days)
     return date_time_add_millis(dt, days * DT_DAY_TO_MS);
 }
 
-
 DayOfWeek date_time_day_of_week(DateTime dt)
 {
     DenseTime dense = date_time_to_dense(dt);
     int64_t days = dense / DT_DAY_TO_MS;
     return ((days + 1) % 7);
+}
+
+int64_t date_time_diff_ms(DateTime a, DateTime b)
+{
+    return (int64_t)(date_time_to_dense(a) - date_time_to_dense(a));
+}
+
+int date_time_compare(DateTime a, DateTime b)
+{
+    return (int)(date_time_to_dense(a) - date_time_to_dense(a));
+}
+
+bool date_time_equal(DateTime a, DateTime b)
+{
+    return date_time_compare(a, b) == 0;
+}
+
+DateTime date_time_now_utc(void)
+{
+    #ifdef _WIN32
+        SYSTEMTIME st;
+        GetSystemTime(&st);
+
+        return (DateTime) {
+            .year  = st.wYear,
+            .month = st.wMonth,
+            .day   = st.wDay,
+            .hour  = st.wHour,
+            .min   = st.wMinute,
+            .sec   = st.wSecond,
+            .milli = st.wMilliseconds
+        };
+    #else
+        struct timeval tv;
+        gettimeofday(&tv, 0);
+        DenseTime now = dense_unix_epoch + (tv.tv_sec * DT_SEC_TO_MS) + (tv.tv_usec / 1000);
+        return datetime_from_dense_time(now);
+    #endif
+}
+
+DateTime date_time_now_local(void)
+{
+    #ifdef _WIN32
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        return (DateTime) {
+            .year  = st.wYear,
+            .month = st.wMonth,
+            .day   = st.wDay,
+            .hour  = st.wHour,
+            .min   = st.wMinute,
+            .sec   = st.wSecond,
+            .milli = st.wMilliseconds
+        };
+    #else
+        struct timeval tv;
+        gettimeofday(&tv, 0);
+        time_t t = tv.tv_sec;
+        struct tm tm_local;
+        localtime_r(&t, &tm_local);
+        return (DateTime) {
+            .year  = tm_local.tm_year + 1900,
+            .month = tm_local.tm_mon + 1,
+            .day   = tm_local.tm_mday,
+            .hour  = tm_local.tm_hour,
+            .min   = tm_local.tm_min,
+            .sec   = tm_local.tm_sec,
+            .milli = tv.tv_usec / 1000
+        };
+    #endif
 }
 
 #endif // DATETIME_IMPLEMENTATION
