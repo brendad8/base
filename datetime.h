@@ -1,14 +1,40 @@
 
+/* datetime.h - date and times types
+
+   To use this library, do this in *one* C file:
+      #define DATETIME_IMPLEMENTATION
+      #include "base/datetime.h"
+*/
+
 #ifndef DATETIME_H
 #define DATETIME_H
+
+#ifndef DATETIME_EXPORT
+#define DATETIME_EXPORT
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/***************************************************************************
+ *          INCLUDES
+ ***************************************************************************/
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+
+/***************************************************************************
+ *          DEFINES
+ ***************************************************************************/
+
+#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%d"
+#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.milli
+
+/***************************************************************************
+ *          TYPES
+ ***************************************************************************/
 
 typedef struct
 {
@@ -36,24 +62,28 @@ enum
     DOW_SAT,
 };
 
-DenseTime   date_time_to_dense      (DateTime dt);
-DateTime    dense_time_to_date      (DenseTime dense);
+/***************************************************************************
+ *          PROTOTYPES
+ ***************************************************************************/
 
-DateTime    date_time_now_utc       (void);
-DateTime    date_time_now_local     (void);
+DenseTime   date_time_to_dense       (DateTime);
+DateTime    dense_time_to_date       (DenseTime);
+DateTime    date_time_now_utc        (void);
+DateTime    date_time_now_local      (void);
+DateTime    date_time_add_millis     (DateTime, int);
+DateTime    date_time_add_secs       (DateTime, int);
+DateTime    date_time_add_mins       (DateTime, int);
+DateTime    date_time_add_days       (DateTime, int);
+DayOfWeek   date_time_day_of_week    (DateTime);
+bool        date_time_equal          (DateTime, DateTime);
+int64_t     date_time_diff_ms        (DateTime, DateTime);
 
-DateTime    date_time_add_millis    (DateTime dt, int millis);
-DateTime    date_time_add_secs      (DateTime dt, int secs);
-DateTime    date_time_add_mins      (DateTime dt, int mins);
-DateTime    date_time_add_days      (DateTime dt, int days);
-
-DayOfWeek   date_time_day_of_week   (DateTime dt);
-
-bool        date_time_equal         (DateTime a, DateTime b);
-int64_t     date_time_diff_ms       (DateTime a, DateTime b);
-
-#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%d"
-#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.milli
+// TODO(bcall):
+DateTime    date_time_local_to_utc   (DateTime)
+DateTime    date_time_utc_to_local   (DateTime)
+int         date_time_compare        (void*, void*);
+int         dense_time_compare       (void*, void*);
+bool        date_time_equal_date     (DateTime, DateTime);
 
 #ifdef __cplusplus
 }
@@ -61,6 +91,9 @@ int64_t     date_time_diff_ms       (DateTime a, DateTime b);
 
 #endif // DATETIME_H
 
+/***************************************************************************
+ *          IMPLEMENTATION
+ ***************************************************************************/
 
 #ifdef DATETIME_IMPLEMENTATION
 

@@ -4,6 +4,7 @@
    To use this library, do this in *one* C file:
       #define ARENA_IMPLEMENTATION
       #include "base/arena.h"
+
 */
 
 #ifndef ARENA_H
@@ -41,29 +42,25 @@ struct ArenaTemp
     uint64_t pos;   // base position when created
 };
 
-#ifndef ARENA_EXPORT
-#define ARENA_EXPORT
-#endif
+Arena*    arena_alloc              (ArenaParams);
+void      arena_release            (Arena* arena);
 
-ARENA_EXPORT Arena*    arena_alloc              (ArenaParams);
-ARENA_EXPORT void      arena_release            (Arena* arena);
+uint64_t  arena_position           (Arena* arena);
+uint64_t  arena_commited           (Arena* arena);
+uint64_t  arena_reserved           (Arena* arena);
 
-ARENA_EXPORT uint64_t  arena_position           (Arena* arena);
-ARENA_EXPORT uint64_t  arena_commited           (Arena* arena);
-ARENA_EXPORT uint64_t  arena_reserved           (Arena* arena);
+void*     arena_push               (Arena* arena, uint64_t size);
+void*     arena_push_no_zero       (Arena* arena, uint64_t size);
 
-ARENA_EXPORT void*     arena_push               (Arena* arena, uint64_t size);
-ARENA_EXPORT void*     arena_push_no_zero       (Arena* arena, uint64_t size);
+void*     arena_push_align         (Arena* arena, uint64_t size, uint64_t align);
+void*     arena_push_align_no_zero (Arena* arena, uint64_t size, uint64_t align);
 
-ARENA_EXPORT void*     arena_push_align         (Arena* arena, uint64_t size, uint64_t align);
-ARENA_EXPORT void*     arena_push_align_no_zero (Arena* arena, uint64_t size, uint64_t align);
+void      arena_pop_to             (Arena* arena, uint64_t pos);
+void      arena_pop                (Arena* arena, uint64_t size);
+void      arena_clear              (Arena* arena);
 
-ARENA_EXPORT void      arena_pop_to             (Arena* arena, uint64_t pos);
-ARENA_EXPORT void      arena_pop                (Arena* arena, uint64_t size);
-ARENA_EXPORT void      arena_clear              (Arena* arena);
-
-ARENA_EXPORT ArenaTemp arena_temp_begin         (Arena* arena);
-ARENA_EXPORT void      arena_temp_end           (ArenaTemp temp);
+ArenaTemp arena_temp_begin         (Arena* arena);
+void      arena_temp_end           (ArenaTemp temp);
 
 #define ARENA_PUSH_ARRAY(arena, type, count)         (type*)arena_push((arena), sizeof(type)*(count))
 #define ARENA_PUSH_ARRAY_NO_ZERO(arena, type, count) (type*)arena_push_no_zero((arena), sizeof(type)*(count))
@@ -104,7 +101,7 @@ static  bool               vm_commit     (void* ptr, uint64_t size);
 static  bool               vm_decommit   (void* ptr, uint64_t size);
 static  void               vm_release    (void* ptr, uint64_t size);
 
-ARENA_EXPORT Arena* arena_alloc(ArenaParams params)
+Arena* arena_alloc(ArenaParams params)
 {
     Arena* arena;
 
@@ -148,7 +145,7 @@ ARENA_EXPORT Arena* arena_alloc(ArenaParams params)
     return arena;
 }
 
-ARENA_EXPORT void arena_release(Arena* arena)
+void arena_release(Arena* arena)
 {
     // NOTE(bcall): only release memory when not given a backing buffer
     // if given a backing buffer, user responsible for freeing...
@@ -156,7 +153,7 @@ ARENA_EXPORT void arena_release(Arena* arena)
         vm_release(arena, arena->reserved);
 }
 
-ARENA_EXPORT static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool zero)
+static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool zero)
 {
     uint64_t new_pos = __ARENA_ALIGN_UP_POW2(arena->pos, align);
     uint64_t new_pos_end = new_pos + size;
@@ -194,52 +191,52 @@ ARENA_EXPORT static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t 
     return result;
 }
 
-ARENA_EXPORT void* arena_push(Arena* arena, uint64_t size)
+void* arena_push(Arena* arena, uint64_t size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 1);
 }
 
-ARENA_EXPORT void* arena_push_no_zero(Arena* arena, uint64_t size)
+void* arena_push_no_zero(Arena* arena, uint64_t size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 0);
 }
 
-ARENA_EXPORT void* arena_push_align(Arena* arena, uint64_t size, uint64_t align)
+void* arena_push_align(Arena* arena, uint64_t size, uint64_t align)
 {
     return arena_push_impl(arena, size, align, 1);
 }
 
-ARENA_EXPORT void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align)
+void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align)
 {
     return arena_push_impl(arena, size, align, 0);
 }
 
-ARENA_EXPORT void arena_pop_to(Arena* arena, uint64_t new_pos)
+void arena_pop_to(Arena* arena, uint64_t new_pos)
 {
     uint64_t pos = arena->pos;
     new_pos = __ARENA_CLAMP(sizeof(Arena), new_pos, pos);
     arena->pos = new_pos;
 }
 
-ARENA_EXPORT void arena_pop(Arena* arena, uint64_t size)
+void arena_pop(Arena* arena, uint64_t size)
 {
     uint64_t pos = arena->pos;
     uint64_t pos_new = (size < pos) ? pos - size : sizeof(Arena);
     arena_pop_to(arena, pos_new);
 }
 
-ARENA_EXPORT void arena_clear(Arena* arena)
+void arena_clear(Arena* arena)
 {
     arena_pop_to(arena, 0);
 }
 
-ARENA_EXPORT ArenaTemp arena_temp_begin(Arena* arena)
+ArenaTemp arena_temp_begin(Arena* arena)
 {
     ArenaTemp temp = {arena, arena->pos};
     return temp;
 }
 
-ARENA_EXPORT void arena_temp_end(ArenaTemp temp)
+void arena_temp_end(ArenaTemp temp)
 {
     arena_pop_to(temp.arena, temp.pos);
 }

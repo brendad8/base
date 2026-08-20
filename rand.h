@@ -13,15 +13,10 @@
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
        You may obtain a copy of the License at
-
 */
 
 #ifndef RAND_H
 #define RAND_H
-
-#ifndef RAND_EXPORT
-#define RAND_EXPORT
-#endif
 
 /***************************************************************************
  *          INCLUDES
@@ -33,14 +28,14 @@
  *          PROTOTYPES
  ***************************************************************************/
 
-RAND_EXPORT void       rand_seed    (uint64_t initstate, uint64_t initseq);
-RAND_EXPORT uint32_t   rand_int     (void);
-RAND_EXPORT float      rand_unif    (void);
-RAND_EXPORT float      rand_norm    (float mu, float sigma);
-RAND_EXPORT float      rand_exp     (float lambda);
-RAND_EXPORT uint32_t   rand_pois    (float mu);
-RAND_EXPORT bool       rand_bern    (float p);
-RAND_EXPORT uint32_t   rand_binom   (uint32_t n, float p);
+void       rand_seed    (uint64_t initstate, uint64_t initseq);
+uint32_t   rand_int     (void);
+float      rand_unif    (void);
+float      rand_norm    (float mu, float sigma);
+float      rand_exp     (float lambda);
+uint32_t   rand_pois    (float mu);
+bool       rand_bern    (float p);
+uint32_t   rand_binom   (uint32_t n, float p);
 
 #endif // RAND_H
        
@@ -74,7 +69,7 @@ static uint32_t prng_rand_r(prng_state* rng)
     return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
-RAND_EXPORT uint32_t rand_int(void)
+uint32_t rand_int(void)
 {
     return prng_rand_r(&s_prng_state);
 }
@@ -88,7 +83,7 @@ static void prng_seed_r(prng_state* rng, uint64_t initstate, uint64_t initseq)
     prng_rand_r(rng);
 }
 
-RAND_EXPORT void rand_seed(uint64_t seed, uint64_t seq)
+void rand_seed(uint64_t seed, uint64_t seq)
 {
     prng_seed_r(&s_prng_state, seed, seq);
 }
@@ -98,7 +93,7 @@ static float prng_runif_r(prng_state* rng)
     return prng_rand_r(rng) / (float)UINT32_MAX;
 }
 
-RAND_EXPORT float rand_unif(void)
+float rand_unif(void)
 {
     return prng_runif_r(&s_prng_state);
 }
@@ -127,7 +122,7 @@ static float prng_rnorm_r(prng_state* rng, float mu, float sigma)
     return z0;
 }
 
-RAND_EXPORT float rand_norm(float mu, float sigma)
+float rand_norm(float mu, float sigma)
 {
     return prng_rnorm_r(&s_prng_state, mu, sigma);
 }
@@ -137,7 +132,7 @@ static float prng_rexp_r(prng_state* rng, float lambda)
     return (-1 / lambda) * log(prng_runif_r(rng));
 }
 
-RAND_EXPORT float rand_exp(float lambda)
+float rand_exp(float lambda)
 {
     return prng_rexp_r(&s_prng_state, lambda);
 }
@@ -154,7 +149,7 @@ static uint32_t prng_rpois_r(prng_state* rng, float mu)
     return k;
 }
 
-RAND_EXPORT uint32_t rand_pois(float mu)
+uint32_t rand_pois(float mu)
 {
     return prng_rpois_r(&s_prng_state, mu);
 }
@@ -164,7 +159,7 @@ static bool prng_rbern_r(prng_state* rng, float p)
     return prng_runif_r(&s_prng_state) < p;
 }
 
-RAND_EXPORT bool rand_bern(float p)
+bool rand_bern(float p)
 {
     return prng_rbern_r(&s_prng_state, p);
 }
@@ -178,7 +173,7 @@ static uint32_t prng_rbinom_r(prng_state* rng, uint32_t n, float p)
     return x;
 }
 
-RAND_EXPORT uint32_t rand_binom(uint32_t n, float p)
+uint32_t rand_binom(uint32_t n, float p)
 {
     return prng_rbinom_r(&s_prng_state, n, p);
 }
