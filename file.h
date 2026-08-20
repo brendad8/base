@@ -58,21 +58,33 @@ int    file_write    (File, const char*, int);
 File file_stdin(void)
 {
     File result = {0};
+#ifdef _WIN32
     result.fd = (uint64_t)GetStdHandle(STD_INPUT_HANDLE);
+#else
+    result.fd = (uint64_t)STDIN_FILENO;
+#endif
     return result;
 }
 
 File file_stdout(void)
 {
     File result = {0};
+#ifdef _WIN32
     result.fd = (uint64_t)GetStdHandle(STD_OUTPUT_HANDLE);
+#else
+    result.fd = (uint64_t)STDOUT_FILENO;
+#endif
     return result;
 }
 
 File file_stderr(void)
 {
     File result = {0};
+#ifdef _WIN32
     result.fd = (uint64_t)GetStdHandle(STD_ERROR_HANDLE);
+#else
+    result.fd = (uint64_t)STDERR_FILENO;
+#endif
     return result;
 }
 
