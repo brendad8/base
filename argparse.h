@@ -329,7 +329,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
                 if (status == ARGPARSE_UNKNOWN_ARG && parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
                 {
                     fprintf(stderr, "error: unknown option `%s`\n", arg_str);
-                    return;
+                    exit(EXIT_FAILURE);
                 }
             }
             else
@@ -342,7 +342,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
                     if (status == ARGPARSE_UNKNOWN_ARG && parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
                     {
                         fprintf(stderr, "error: unknown option `%c`\n", *short_name);
-                        return;
+                        exit(EXIT_FAILURE);
                     }
                     short_name++;
                 }
@@ -356,7 +356,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
             if (parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
             {
                 fprintf(stderr, "error: unknown option `%s`\n", arg_str);
-                return;
+                exit(EXIT_FAILURE);
             }
         }
 
