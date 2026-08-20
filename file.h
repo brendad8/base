@@ -41,6 +41,7 @@ File   file_stderr   (void);
 File   file_open     (char*, FileAccessFlags);
 void   file_close    (File);
 
+int    file_read     (File, char*, int);
 int    file_write    (File, const char*, int);
 
 #endif // FILE_H
@@ -52,7 +53,7 @@ int    file_write    (File, const char*, int);
 #ifdef FILE_IMPLEMENTATION
 
 #ifdef _WIN32
-#include "windows.h"
+#include <windows.h>
 #endif
 
 File file_stdin(void)
@@ -92,6 +93,7 @@ File file_open(char* file_name, FileAccessFlags flags)
 {
     File result = {0};
 
+#ifdef _WIN32
     DWORD access_flags = 0;
     DWORD share_mode = 0;
     DWORD creation_disposition = OPEN_EXISTING;
@@ -114,21 +116,29 @@ File file_open(char* file_name, FileAccessFlags flags)
         DWORD err = GetLastError();
         (void)err;
     }
+#else
+#endif
     return result;
 }
 
 void file_close(File file)
 {
+#ifdef _WIN32
     HANDLE handle = (HANDLE)file.fd;
     BOOL result = CloseHandle(handle);
+#else
+#endif
     (void)result;
 }
 
 int file_write(File file, const char* buf, int len)
 {
-    DWORD written;
-    WriteFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, &written, NULL);
-    return written;
+    int result;
+#ifdef _WIN32
+    WriteFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, &result, NULL);
+#else
+#endif
+    return result;
 }
 
 
