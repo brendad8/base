@@ -62,25 +62,28 @@ enum
  *          PROTOTYPES
  ***************************************************************************/
 
-DenseTime   date_time_to_dense       (DateTime);
-DateTime    date_time_from_dense     (DenseTime);
-DateTime    date_time_now_utc        (void);
-DateTime    date_time_now_local      (void);
-DayOfWeek   date_time_day_of_week    (DateTime);
-DateTime    date_time_add_millis     (DateTime, int);
-DateTime    date_time_add_secs       (DateTime, int);
-DateTime    date_time_add_mins       (DateTime, int);
-DateTime    date_time_add_days       (DateTime, int);
-int         date_time_compare        (DateTime, DateTime);
-bool        date_time_equal          (DateTime, DateTime);
-bool        date_time_equal_date     (DateTime, DateTime);
-int64_t     date_time_diff_ms        (DateTime, DateTime);
+DenseTime   date_time_to_dense         (DateTime);
+DateTime    date_time_from_dense       (DenseTime);
+DateTime    date_time_now_utc          (void);
+DateTime    date_time_now_local        (void);
+DayOfWeek   date_time_day_of_week      (DateTime);
+DateTime    date_time_add_millis       (DateTime, int);
+DateTime    date_time_add_secs         (DateTime, int);
+DateTime    date_time_add_mins         (DateTime, int);
+DateTime    date_time_add_days         (DateTime, int);
+int         date_time_compare          (DateTime, DateTime);
+bool        date_time_equal            (DateTime, DateTime);
+bool        date_time_equal_date       (DateTime, DateTime);
+int64_t     date_time_diff_ms          (DateTime, DateTime);
 
-// TODO(bcall):
-DateTime    date_time_local_to_utc   (DateTime);
-DateTime    date_time_utc_to_local   (DateTime);
-DateTime    date_time_from_unix      (int64_t);
-int64_t     date_time_to_unix        (DateTime);
+bool        date_time_local_to_utc     (DateTime, DateTime*);
+bool        date_time_utc_to_local     (DateTime, DateTime*);
+
+
+DateTime    date_time_local_from_unix  (int64_t);
+int64_t     date_time_local_to_unix    (DateTime);
+DateTime    date_time_utc_from_unix    (int64_t);
+int64_t     date_time_utc_to_unix      (DateTime);
 
 #ifdef __cplusplus
 }
@@ -112,6 +115,7 @@ static const DateTime dt_unix_epoch = {
     .month = 1,
     .day = 1
 };
+
 static const DenseTime dense_unix_epoch = 62135596800000;
 
 static const int64_t dt_days_in_year[2] = { 365, 366 };        // { non-leap, leap }
@@ -319,6 +323,136 @@ DateTime date_time_now_local(void)
             .milli = tv.tv_usec / 1000
         };
     #endif
+}
+
+bool date_time_local_to_utc(DateTime local, DateTime* utc)
+{
+#ifdef _WIN32
+    SYSTEMTIME st_utc;
+    DYNAMIC_TIME_ZONE_INFORMATION tz;
+    SYSTEMTIME st_local = {
+        .wYear         = local.year,
+        .wMonth        = local.month,
+        .wDay          = local.day,
+        .wHour         = local.hour,
+        .wMinute       = local.min,
+        .wSecond       = local.sec,
+        .wMilliseconds = local.milli
+    };
+
+    DWORD id = GetDynamicTimeZoneInformation(&tz);
+
+    if (id == TIME_ZONE_ID_INVALID)
+        return false;
+
+    BOOL res = TzSpecificLocalTimeToSystemTimeEx(&tz, &st_local, &st_utc);
+    if (res)
+    {
+        utc->year  = st_utc.wYear,
+        utc->month = st_utc.wMonth,
+        utc->day   = st_utc.wDay,
+        utc->hour  = st_utc.wHour,
+        utc->min   = st_utc.wMinute,
+        utc->sec   = st_utc.wSecond,
+        utc->milli = st_utc.wMilliseconds
+    }
+    return res;
+#else
+    struct tm tm_local = {
+        .tm_sec   = local.sec,
+        .tm_min   = local.min,
+        .tm_hour  = local.hour,
+        .tm_mday  = local.day,
+        .tm_mon   = local.month - 1,
+        .tm_year  = local.year - 1900,
+        .tm_isdst = -1
+    };
+
+    time_t t = mktime(&tm_local);
+
+    if (t == (time_t)-1)
+        return false;
+
+    struct tm tm_utc;
+
+    if (gmtime_r(&t, &tm_utc) == NULL)
+        return false;
+
+    utc->year  = tm_utc.tm_year + 1900;
+    utc->month = tm_utc.tm_mon + 1;
+    utc->day   = tm_utc.tm_mday;
+    utc->hour  = tm_utc.tm_hour;
+    utc->min   = tm_utc.tm_min;
+    utc->sec   = tm_utc.tm_sec;
+    utc->milli = local.milli;
+
+    return true;
+#endif
+}
+
+bool date_time_utc_to_local(DateTime utc, DateTime* local);
+{
+#ifdef _WIN32
+    SYSTEMTIME st_local;
+    DYNAMIC_TIME_ZONE_INFORMATION tz;
+    SYSTEMTIME st_utc = {
+        .wYear         = utc.year,
+        .wMonth        = utc.month,
+        .wDay          = utc.day,
+        .wHour         = utc.hour,
+        .wMinute       = utc.min,
+        .wSecond       = utc.sec,
+        .wMilliseconds = utc.milli
+    };
+
+    DWORD id = GetDynamicTimeZoneInformation(&tz);
+
+    if (id == TIME_ZONE_ID_INVALID)
+        return false;
+
+    BOOL res = SystemTimeToTzSpecificLocalTimeEx(&tz, &st_utc, &st_local);
+    if (res)
+    {
+        local->year  = st_local.wYear,
+        local->month = st_local.wMonth,
+        local->day   = st_local.wDay,
+        local->hour  = st_local.wHour,
+        local->min   = st_local.wMinute,
+        local->sec   = st_local.wSecond,
+        local->milli = st_local.wMilliseconds
+    }
+    return res;
+#else
+    struct tm tm_utc = {
+        .tm_sec   = utc.sec,
+        .tm_min   = utc.min,
+        .tm_hour  = utc.hour,
+        .tm_mday  = utc.day,
+        .tm_mon   = utc.month - 1,
+        .tm_year  = utc.year - 1900,
+        .tm_isdst = 0
+    };
+
+    time_t t = timegm(&tm_utc);
+
+    if (t == (time_t)-1)
+        return false;
+
+    struct tm tm_local;
+
+    if (localtime_r(&t, &tm_local) == nullptr)
+        return false;
+
+    local->year  = tm_local.tm_year + 1900;
+    local->month = tm_local.tm_mon + 1;
+    local->day   = tm_local.tm_mday;
+    local->hour  = tm_local.tm_hour;
+    local->min   = tm_local.tm_min;
+    local->sec   = tm_local.tm_sec;
+    local->milli = utc.milli;
+
+    return true;
+#endif
 }
 
 #endif // DATETIME_IMPLEMENTATION
