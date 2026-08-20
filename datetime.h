@@ -9,10 +9,6 @@
 #ifndef DATETIME_H
 #define DATETIME_H
 
-#ifndef DATETIME_EXPORT
-#define DATETIME_EXPORT
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,23 +63,24 @@ enum
  ***************************************************************************/
 
 DenseTime   date_time_to_dense       (DateTime);
-DateTime    dense_time_to_date       (DenseTime);
+DateTime    date_time_from_dense     (DenseTime);
 DateTime    date_time_now_utc        (void);
 DateTime    date_time_now_local      (void);
+DayOfWeek   date_time_day_of_week    (DateTime);
 DateTime    date_time_add_millis     (DateTime, int);
 DateTime    date_time_add_secs       (DateTime, int);
 DateTime    date_time_add_mins       (DateTime, int);
 DateTime    date_time_add_days       (DateTime, int);
-DayOfWeek   date_time_day_of_week    (DateTime);
+int         date_time_compare        (DateTime, DateTime);
 bool        date_time_equal          (DateTime, DateTime);
+bool        date_time_equal_date     (DateTime, DateTime);
 int64_t     date_time_diff_ms        (DateTime, DateTime);
 
 // TODO(bcall):
-DateTime    date_time_local_to_utc   (DateTime)
-DateTime    date_time_utc_to_local   (DateTime)
-int         date_time_compare        (void*, void*);
-int         dense_time_compare       (void*, void*);
-bool        date_time_equal_date     (DateTime, DateTime);
+DateTime    date_time_local_to_utc   (DateTime);
+DateTime    date_time_utc_to_local   (DateTime);
+DateTime    date_time_from_unix      (int64_t);
+int64_t     date_time_to_unix        (DateTime);
 
 #ifdef __cplusplus
 }
@@ -163,7 +160,7 @@ DenseTime date_time_to_dense(DateTime dt)
 }
 
 
-DateTime dense_time_to_date(DenseTime dense)
+DateTime date_time_from_dense(DenseTime dense)
 {
     DateTime result;
     int64_t days = dense / DT_DAY_TO_MS; // days since 0001-01-01 00:00:00.000
@@ -217,7 +214,7 @@ DateTime dense_time_to_date(DenseTime dense)
 DateTime date_time_add_millis(DateTime dt, int millis)
 {
     DenseTime dense = date_time_to_dense(dt);
-    return dense_time_to_date(dense);
+    return date_time_from_dense(dense);
 }
 
 DateTime date_time_add_secs(DateTime dt, int secs)
@@ -249,17 +246,24 @@ DayOfWeek date_time_day_of_week(DateTime dt)
 
 int64_t date_time_diff_ms(DateTime a, DateTime b)
 {
-    return (int64_t)(date_time_to_dense(a) - date_time_to_dense(a));
+    return (int64_t)(date_time_to_dense(a) - date_time_to_dense(b));
 }
 
 int date_time_compare(DateTime a, DateTime b)
 {
-    return (int)(date_time_to_dense(a) - date_time_to_dense(a));
+    DenseTime da = date_time_to_dense(a);
+    DenseTime db = date_time_to_dense(b);
+    return (da < db) - (da > db);
 }
 
 bool date_time_equal(DateTime a, DateTime b)
 {
     return date_time_compare(a, b) == 0;
+}
+
+bool date_time_equal_date(a DateTime, b DateTime)
+{
+    return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 DateTime date_time_now_utc(void)
