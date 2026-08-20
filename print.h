@@ -9,6 +9,8 @@
        stb_sprintf - v1.10 - public domain snprintf() implementation
 */
 
+// TODO(bcall): println not working...
+
 #ifndef PRINT_H
 #define PRINT_H
 
@@ -57,6 +59,7 @@ int   vfprintln  (File*, const char* fmt, va_list);
     #define NEWLINE_LEN 1
 #endif
 
+// TODO(bcall): not standalone...
 #define FILE_IMPLEMENTATION
 #include "file.h"
 
@@ -65,17 +68,6 @@ static char* print_cb(const char *buf, void* file, int len)
     File out = *(File*)file;
     file_write(out, buf, len);
     return (char *)buf;
-}
-
-static char* println_cb(const char *buf, void* file, int len)
-{
-    File out = *(File*)file;
-    file_write(out, buf, len);
-    char* res = (char *)buf;
-    if (!res)
-        file_write(out, NEWLINE, NEWLINE_LEN);
-
-    return res;
 }
 
 int vfprint(File* file, const char *fmt, va_list ap)
@@ -90,17 +82,17 @@ int vprint(const char *fmt, va_list ap)
     return vfprint(&std_out, fmt, ap);
 }
 
-int vfprintln(File* file, const char *fmt, va_list ap)
-{
-    char buffer[STB_SPRINTF_MIN];
-    return stbsp_vsprintfcb(println_cb, (void*)file, buffer, fmt, ap);
-}
+// int vfprintln(File* file, const char *fmt, va_list ap)
+// {
+//     char buffer[STB_SPRINTF_MIN];
+//     return stbsp_vsprintfcb(println_cb, (void*)file, buffer, fmt, ap);
+// }
 
-int vprintln(const char *fmt, va_list ap)
-{
-    File std_out = file_stdout();
-    return vfprintln(&std_out, fmt, ap);
-}
+// int vprintln(const char *fmt, va_list ap)
+// {
+//     File std_out = file_stdout();
+//     return vfprintln(&std_out, fmt, ap);
+// }
 
 int fprint(File* file, const char *fmt, ...)
 {
@@ -111,14 +103,14 @@ int fprint(File* file, const char *fmt, ...)
     return ret;
 }
 
-int fprintln(File* file, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    int ret = vfprintln(file, fmt, ap);
-    va_end(ap);
-    return ret;
-}
+// int fprintln(File* file, const char *fmt, ...)
+// {
+//     va_list ap;
+//     va_start(ap, fmt);
+//     int ret = vfprintln(file, fmt, ap);
+//     va_end(ap);
+//     return ret;
+// }
 
 int print(const char* fmt, ...)
 {
@@ -132,12 +124,15 @@ int print(const char* fmt, ...)
 
 int println(const char* fmt, ...)
 {
+    char* newline = NEWLINE;
+    int newline_len = NEWLINE_LEN;
     File std_out = file_stdout();
     va_list ap;
     va_start(ap, fmt);
-    int ret = vfprintln(&std_out, fmt, ap);
+    int ret = vfprint(&std_out, fmt, ap);
     va_end(ap);
-    return ret;
+    file_write(std_out, newline, newline_len);
+    return ret + 1;
 }
 
 #endif // PRINT_IMPLEMENTATION
