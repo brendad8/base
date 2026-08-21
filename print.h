@@ -9,10 +9,12 @@
        stb_sprintf - v1.10 - public domain snprintf() implementation
 */
 
-// TODO(bcall): println not working...
-
 #ifndef PRINT_H
 #define PRINT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /***************************************************************************
  *          INCLUDES
@@ -29,17 +31,19 @@
 int   print      (const char *fmt, ...);
 int   println    (const char *fmt, ...);
 
-int   fprint     (File*, const char* fmt, ...);
-int   fprintln   (File*, const char* fmt, ...);
+int   fprint     (File, const char* fmt, ...);
+int   fprintln   (File, const char* fmt, ...);
 
 int   vprint     (const char* fmt, va_list);
 int   vprintln   (const char* fmt, va_list);
 
-int   vfprint    (File*, const char* fmt, va_list);
-int   vfprintln  (File*, const char* fmt, va_list);
+int   vfprint    (File, const char* fmt, va_list);
+int   vfprintln  (File, const char* fmt, va_list);
 
-#endif // PRINT_H
-      
+#ifdef __cplusplus
+}
+#endif
+
 /***************************************************************************
  *          IMPLEMENTATION
  ***************************************************************************/
@@ -91,37 +95,35 @@ static char* print_cb(const char *buf, void* file, int len)
     return (char *)buf;
 }
 
-int vfprint(File* file, const char *fmt, va_list ap)
+int vfprint(File file, const char *fmt, va_list ap)
 {
     char buffer[STB_SPRINTF_MIN];
-    return stbsp_vsprintfcb(print_cb, (void*)file, buffer, fmt, ap);
+    return stbsp_vsprintfcb(print_cb, (void*)&file, buffer, fmt, ap);
 }
 
 int vprint(const char *fmt, va_list ap)
 {
-    File std_out = get_stdout();
-    return vfprint(&std_out, fmt, ap);
+    return vfprint(get_stdout(), fmt, ap);
 }
 
-int vfprintln(File* file, const char *fmt, va_list ap)
+int vfprintln(File file, const char *fmt, va_list ap)
 {
     char buffer[STB_SPRINTF_MIN];
-    int result = stbsp_vsprintfcb(print_cb, (void*)file, buffer, fmt, ap);
+    int result = stbsp_vsprintfcb(print_cb, (void*)&file, buffer, fmt, ap);
 
     char* newline = NEWLINE;
     int newline_len = NEWLINE_LEN;
-    result += print_file_write(*file, newline, newline_len);
+    result += print_file_write(file, newline, newline_len);
 
     return result;
 }
 
 int vprintln(const char *fmt, va_list ap)
 {
-    File std_out = get_stdout();
-    return vfprintln(&std_out, fmt, ap);
+    return vfprintln(get_stdout(), fmt, ap);
 }
 
-int fprint(File* file, const char *fmt, ...)
+int fprint(File file, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -130,7 +132,7 @@ int fprint(File* file, const char *fmt, ...)
     return ret;
 }
 
-int fprintln(File* file, const char *fmt, ...)
+int fprintln(File file, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -141,22 +143,23 @@ int fprintln(File* file, const char *fmt, ...)
 
 int print(const char* fmt, ...)
 {
-    File std_out = get_stdout();
     va_list ap;
     va_start(ap, fmt);
-    int ret = vfprint(&std_out, fmt, ap);
+    int ret = vfprint(get_stdout(), fmt, ap);
     va_end(ap);
     return ret;
 }
 
 int println(const char* fmt, ...)
 {
-    File std_out = get_stdout();
     va_list ap;
     va_start(ap, fmt);
-    int ret = vfprintln(&std_out, fmt, ap);
+    int ret = vfprintln(get_stdout(), fmt, ap);
     va_end(ap);
     return ret;
 }
 
 #endif // PRINT_IMPLEMENTATION
+
+#endif // PRINT_H
+      
