@@ -89,8 +89,6 @@ int64_t     date_time_utc_to_unix      (DateTime);
 }
 #endif
 
-#endif // DATETIME_H
-
 /***************************************************************************
  *          IMPLEMENTATION
  ***************************************************************************/
@@ -456,3 +454,6 @@ bool date_time_utc_to_local(DateTime utc, DateTime* local);
 }
 
 #endif // DATETIME_IMPLEMENTATION
+
+#endif // DATETIME_H
+
