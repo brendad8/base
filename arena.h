@@ -17,12 +17,12 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+#define ARENA_HEADER_SIZE 128
+
 typedef int ArenaFlags;
 enum
 {
-    ARENA_NO_CHAIN    = 1 << 2;
-    ARENA_LARGE_PAGES = 1 << 3;
-
+    ARENA_NO_CHAIN    = 1 << 0;
 }
 
 typedef struct ArenaParams ArenaParams;
@@ -37,18 +37,23 @@ struct ArenaParams
 typedef struct Arena Arena;
 struct Arena
 {
-    uint8_t* base;          // arena base position
-    uint64_t pos;           // arena alloc position
-    uint64_t committed;     // total memory commited
-    uint64_t reserved;      // total memory reserved
-    uint64_t commit_size;   // min size in which more memory is commited
+    Arena* prev;
+    Arena* current;
+    uint64_t base_pos;
+    uint64_t commit_size;
+    uint64_t reserve_size;
+    uint64_t pos;
+    uint64_t committed;
+    uint64_t reserved;
+    uint64_t commit_size;
+    ArenaFlags flags;
 };
 
 typedef struct ArenaTemp ArenaTemp;
 struct ArenaTemp
 {
     Arena* arena;   // underlying arena
-    uint64_t pos;   // base position when created
+    uint64_t pos;   // position when created
 };
 
 Arena*    arena_alloc              (ArenaParams);
@@ -111,45 +116,43 @@ static  bool               vm_commit     (void* ptr, uint64_t size);
 static  bool               vm_decommit   (void* ptr, uint64_t size);
 static  void               vm_release    (void* ptr, uint64_t size);
 
-Arena* arena_alloc(ArenaParams params)
+Arena* arena_alloc(ArenaParams* params)
 {
-    Arena* arena;
+    Arena* arena = NULL;
 
-    if (params.backing_memory)
+    char* base = params.backing_memory;
+    uint64_t commit_size = params->commit_size;
+    uint64_t reserve_size = params->reserve_size;
+
+    if (base == NULL)
     {
-        if (params.reserve_size == 0)
-            return NULL;
-
-        arena = (Arena*)params.backing_memory;
-        arena->base = (uint8_t*)arena;
-        arena->pos = sizeof(Arena);
-        arena->committed = params.reserve_size;
-        arena->reserved = params.reserve_size;
-        arena->commit_size = 0;
-    }
-    else
-    {
-        if (params.commit_size <= 0)  
-            params.commit_size  = arena_default_commit_size;
-
-        if (params.reserve_size <= 0) 
-            params.reserve_size = arena_default_reserve_size;
+        // if (params.commit_size <= 0)  
+        //     params.commit_size  = arena_default_commit_size;
+        //
+        // if (params.reserve_size <= 0) 
+        //     params.reserve_size = arena_default_reserve_size;
 
         VirtualMemoryInfo info = vm_get_info();
 
-        params.commit_size  = __ARENA_ALIGN_UP_POW2(params.commit_size, info.page_size);
-        params.reserve_size = __ARENA_ALIGN_UP_POW2(params.reserve_size, info.allocation_granularity);
+        commit_size  = __ARENA_ALIGN_UP_POW2(commit_size, info.page_size);
+        reserve_size = __ARENA_ALIGN_UP_POW2(reserve_size, info.page_size);
 
-        void* base = vm_reserve(params.reserve_size);
-        if (!vm_commit(base, params.commit_size)) 
-            return NULL;
+        base = vm_reserve(reserve_size);
+        vm_commit(base, commit_size)) 
+    }
 
+    if (base != NULL)
+    {
         arena = (Arena*)base;
-        arena->base = (uint8_t*)arena;
-        arena->pos = sizeof(Arena);
-        arena->committed = params.commit_size;
-        arena->reserved = params.reserve_size;
-        arena->commit_size = params.commit_size;
+        arena->current = arena;
+        arena->prev = NULL;
+        arena->commit_size = commit_size;
+        arena->reserve_size = reserve_size;
+        arena->base_pos = 0;
+        arena->pos = ARENA_HEADER_SIZE;
+        arena->committed = commit_size;
+        arena->reserved = reserve_size;
+        arena->flags = params->flags;
     }
 
     return arena;
@@ -157,10 +160,13 @@ Arena* arena_alloc(ArenaParams params)
 
 void arena_release(Arena* arena)
 {
-    // NOTE(bcall): only release memory when not given a backing buffer
-    // if given a backing buffer, user responsible for freeing...
-    if (arena->commit_size != 0)
-        vm_release(arena, arena->reserved);
+    Arena* a;
+    Arena* tmp = NULL;
+    for (a = arena->current; a != NULL; a = tmp)
+    {
+        prev = a->prev;
+        vm_release(n, n->reserved);
+    }
 }
 
 static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool zero)
