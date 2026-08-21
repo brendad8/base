@@ -1,3 +1,11 @@
+
+/* argparse.h - command line argument parsing
+
+   To use this library, do this in *one* C file:
+      #define ARGPARSE_IMPLEMENTATION
+      #include "base/argparse.h"
+*/
+
 #ifndef ARGPARSE_H
 #define ARGPARSE_H
 

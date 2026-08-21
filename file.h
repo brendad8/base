@@ -1,4 +1,11 @@
 
+/* file.h - file and filesystem functions
+
+   To use this library, do this in *one* C file:
+      #define DATETIME_IMPLEMENTATION
+      #include "base/datetime.h"
+*/
+
 #ifndef FILE_H
 #define FILE_H
 
