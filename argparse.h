@@ -9,9 +9,28 @@
 extern "C" {
 #endif
 
+/***************************************************************************
+ *          INCLUDES
+ ***************************************************************************/
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+/***************************************************************************
+ *          MACROS
+ ***************************************************************************/
+
+#define ARG_BOOL(...)    { ARGPARSE_TYPE_BOOL, __VA_ARGS__ }
+#define ARG_INT(...)     { ARGPARSE_TYPE_INT, __VA_ARGS__ }
+#define ARG_FLOAT(...)   { ARGPARSE_TYPE_FLOAT, __VA_ARGS__ }
+#define ARG_STRING(...)  { ARGPARSE_TYPE_STRING, __VA_ARGS__ }
+#define ARG_HELP()       ARG_BOOL(NULL, 'h', "help", "show this help message and exit", argparse_help_cb, NULL)
+#define ARG_END(...)     { ARGPARSE_TYPE_END, NULL, '\0', NULL, NULL, NULL, NULL }
+
+/***************************************************************************
+ *          TYPES
+ ***************************************************************************/
 
 typedef int ArgParseFlags;
 enum 
@@ -70,12 +89,9 @@ struct ArgParser
     char* current_arg;
 };
 
-#define ARG_BOOL(...)    { ARGPARSE_TYPE_BOOL, __VA_ARGS__ }
-#define ARG_INT(...)     { ARGPARSE_TYPE_INT, __VA_ARGS__ }
-#define ARG_FLOAT(...)   { ARGPARSE_TYPE_FLOAT, __VA_ARGS__ }
-#define ARG_STRING(...)  { ARGPARSE_TYPE_STRING, __VA_ARGS__ }
-#define ARG_HELP()       ARG_BOOL(NULL, 'h', "help", "show this help message and exit", argparse_help_cb, NULL)
-#define ARG_END(...)     { ARGPARSE_TYPE_END, NULL, '\0', NULL, NULL, NULL, NULL }
+/***************************************************************************
+ *          PROTOTYPES
+ ***************************************************************************/
 
 void   argparse_init              (ArgParser* parser, Arg* args, char* prog_name, char* usage, int flags);
 void   argparse_parse             (ArgParser* parser, int argc, char* argv[]);
@@ -91,11 +107,20 @@ int    argparse_help_cb_no_exit   (ArgParser* parser, Arg* arg);
 
 #endif // ARGPARSE_H
 
+/***************************************************************************
+ *          IMPLEMENTATION
+ ***************************************************************************/
+
 #ifdef ARGPARSE_IMPLEMENTATION
 
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+
+#ifndef PRINT_IMPLEMENTATION
+    #define PRINT_IMPLEMENTATION
+    #include "print.h"
+#endif
 
 #define ARGPARSE_UNKNOWN_ARG -1
 
@@ -129,11 +154,11 @@ void argparse_init(ArgParser* parser, Arg* args, char* prog_name, char* usage, i
 static void argparse_error(Arg* arg, char* reason, int flags)
 {
     if (flags & ARGPARSE_LONG_NAME) 
-        fprintf(stderr, "error: option `--%s` %s\n", arg->long_name, reason);
+        eprint("error: option `--%s` %s\n", arg->long_name, reason);
     else if (flags & ARGPARSE_POSITIONAL)
-        fprintf(stderr, "error: option `--%s` %s\n", arg->help, reason);
+        eprint("error: option `--%s` %s\n", arg->help, reason);
     else 
-        fprintf(stderr, "error: option `-%c` %s\n", arg->short_name, reason);
+        eprint("error: option `-%c` %s\n", arg->short_name, reason);
 
     exit(EXIT_FAILURE);
 }
@@ -328,7 +353,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
                 status = argparse_parse_long(parser, arg_str + 2);
                 if (status == ARGPARSE_UNKNOWN_ARG && parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
                 {
-                    fprintf(stderr, "error: unknown option `%s`\n", arg_str);
+                    eprint("error: unknown option `%s`\n", arg_str);
                     exit(EXIT_FAILURE);
                 }
             }
@@ -341,7 +366,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
                     status = argparse_parse_short(parser, *short_name);
                     if (status == ARGPARSE_UNKNOWN_ARG && parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
                     {
-                        fprintf(stderr, "error: unknown option `%c`\n", *short_name);
+                        eprint("error: unknown option `%c`\n", *short_name);
                         exit(EXIT_FAILURE);
                     }
                     short_name++;
@@ -355,7 +380,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
             
             if (parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
             {
-                fprintf(stderr, "error: unknown option `%s`\n", arg_str);
+                eprint("error: unknown option `%s`\n", arg_str);
                 exit(EXIT_FAILURE);
             }
         }
@@ -375,7 +400,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
     }
     if (missing_arg_count)
     {
-        fprintf(stderr, "error: the following arguments are required:");
+        eprint("error: the following arguments are required:");
         int missing_arg_idx = 0;
         for (arg = parser->args; arg->arg_type != ARGPARSE_TYPE_END; arg++) 
         {
@@ -383,22 +408,22 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
             {
                 if (arg->flags & ARG_POSITIONAL)
                 {
-                    fprintf(stderr, " %s", arg->help);
+                    eprint(" %s", arg->help);
                 }
                 else
                 {
                     if (arg->long_name && arg->long_name)
-                        fprintf(stderr, " --%s/-%c", arg->long_name, arg->short_name);
+                        eprint(" --%s/-%c", arg->long_name, arg->short_name);
                     else if (arg->long_name)
-                        fprintf(stderr, " --%s", arg->long_name);
+                        eprint(" --%s", arg->long_name);
                     else if (arg->short_name)
-                        fprintf(stderr, " -%c", arg->short_name);
+                        eprint(" -%c", arg->short_name);
                 }
                 missing_arg_idx++;
                 if (missing_arg_idx != missing_arg_count)
-                    fputc(',', stderr);
+                    eprint(",");
                 else
-                    fputc('\n', stderr);
+                    eprint("\n");
             }
         }
         exit(EXIT_FAILURE);
@@ -410,11 +435,11 @@ void argparse_print_usage(ArgParser* parser)
 {
     if (parser->usage)
     {
-        fprintf(stdout, "Usage: %s\n", parser->usage);
+        print("Usage: %s\n", parser->usage);
     }
     else if (parser->prog_name)
     {
-        fprintf(stdout, "Usage: %s", parser->prog_name);
+        print("Usage: %s", parser->prog_name);
 
         Arg* arg;
         for (arg = parser->args; arg->arg_type != ARGPARSE_TYPE_END; arg++) 
@@ -422,10 +447,10 @@ void argparse_print_usage(ArgParser* parser)
             if (arg->flags & ARG_POSITIONAL)
             {
                 if (arg->help)
-                    fprintf(stdout, " %s", arg->help);
+                    print(" %s", arg->help);
             }
         }
-        fputs(" [arguments]\n", stdout);
+        print(" [arguments]\n");
     }
 }
 
@@ -472,18 +497,18 @@ void argparse_print_help(ArgParser* parser)
         size_t pos = 0;
         size_t pad = 0;
 
-        pos = fprintf(stdout, "    ");
+        pos = eprint("    ");
         if (arg->short_name) 
         {
-            pos += fprintf(stdout, "-%c", arg->short_name);
+            pos += eprint("-%c", arg->short_name);
         }
         if (arg->long_name && arg->short_name) 
         {
-            pos += fprintf(stdout, ", ");
+            pos += eprint(", ");
         }
         if (arg->long_name) 
         {
-            pos += fprintf(stdout, "--%s", arg->long_name);
+            pos += eprint("--%s", arg->long_name);
         }
 
         if (pos <= usage_opts_width) 
@@ -492,19 +517,19 @@ void argparse_print_help(ArgParser* parser)
         } 
         else 
         {
-            fputc('\n', stdout);
+            print("\n");
             pad = usage_opts_width;
         }
-        fprintf(stdout, "%*s%s\n", (int)pad + 2, "", arg->help ? arg->help : "");
+        print("%*s%s\n", (int)pad + 2, "", arg->help ? arg->help : "");
     }
 }
 
 int argparse_help_cb_no_exit(ArgParser* parser, Arg* arg)
 {
     (void)arg;
-    fputc('\n', stdout);
+    print("\n");
     argparse_print_usage(parser);
-    fputc('\n', stdout);
+    print("\n");
     argparse_print_help(parser);
     return 0;
 }

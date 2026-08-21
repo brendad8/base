@@ -76,6 +76,7 @@ void      arena_temp_end           (ArenaTemp temp);
 
 #ifdef ARENA_IMPLEMENTATION
 
+#include <stdbool.h>
 #include <string.h>
 
 static const uint64_t arena_default_alignment    = sizeof(void*);

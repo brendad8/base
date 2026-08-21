@@ -263,7 +263,7 @@ bool date_time_equal(DateTime a, DateTime b)
     return date_time_compare(a, b) == 0;
 }
 
-bool date_time_equal_date(a DateTime, b DateTime)
+bool date_time_equal_date(DateTime a, DateTime b)
 {
     return a.year == b.year && a.month == b.month && a.day == b.day;
 }
@@ -346,13 +346,13 @@ bool date_time_local_to_utc(DateTime local, DateTime* utc)
     BOOL res = TzSpecificLocalTimeToSystemTimeEx(&tz, &st_local, &st_utc);
     if (res)
     {
-        utc->year  = st_utc.wYear,
-        utc->month = st_utc.wMonth,
-        utc->day   = st_utc.wDay,
-        utc->hour  = st_utc.wHour,
-        utc->min   = st_utc.wMinute,
-        utc->sec   = st_utc.wSecond,
-        utc->milli = st_utc.wMilliseconds
+        utc->year  = st_utc.wYear;
+        utc->month = st_utc.wMonth;
+        utc->day   = st_utc.wDay;
+        utc->hour  = st_utc.wHour;
+        utc->min   = st_utc.wMinute;
+        utc->sec   = st_utc.wSecond;
+        utc->milli = st_utc.wMilliseconds;
     }
     return res;
 #else
@@ -388,7 +388,7 @@ bool date_time_local_to_utc(DateTime local, DateTime* utc)
 #endif
 }
 
-bool date_time_utc_to_local(DateTime utc, DateTime* local);
+bool date_time_utc_to_local(DateTime utc, DateTime* local)
 {
 #ifdef _WIN32
     SYSTEMTIME st_local;
@@ -411,13 +411,13 @@ bool date_time_utc_to_local(DateTime utc, DateTime* local);
     BOOL res = SystemTimeToTzSpecificLocalTimeEx(&tz, &st_utc, &st_local);
     if (res)
     {
-        local->year  = st_local.wYear,
-        local->month = st_local.wMonth,
-        local->day   = st_local.wDay,
-        local->hour  = st_local.wHour,
-        local->min   = st_local.wMinute,
-        local->sec   = st_local.wSecond,
-        local->milli = st_local.wMilliseconds
+        local->year  = st_local.wYear;
+        local->month = st_local.wMonth;
+        local->day   = st_local.wDay;
+        local->hour  = st_local.wHour;
+        local->min   = st_local.wMinute;
+        local->sec   = st_local.wSecond;
+        local->milli = st_local.wMilliseconds;
     }
     return res;
 #else

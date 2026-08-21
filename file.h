@@ -82,10 +82,14 @@ int      file_vprintln  (File, const char* fmt, va_list);
 
 #ifdef _WIN32
     #include <windows.h>
+    #define NEWLINE "\r\n"
+    #define NEWLINE_LEN 2
 #else
     #include <fcntl.h>
     #include <unistd.h>
     #include <sys/stat.h>
+    #define NEWLINE "\n"
+    #define NEWLINE_LEN 1
 #endif
 
 File file_stdin(void)
