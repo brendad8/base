@@ -42,6 +42,8 @@ int   veprintln  (const char* fmt, va_list);
 }
 #endif
 
+#endif // PRINT_H
+
 /***************************************************************************
  *          IMPLEMENTATION
  ***************************************************************************/
@@ -49,9 +51,14 @@ int   veprintln  (const char* fmt, va_list);
 #ifdef PRINT_IMPLEMENTATION
 
 // NOTE(bcall): without NOUNALIGNED define, zig cc debug programs will panic for known reason. 
-#define STB_SPRINTF_NOUNALIGNED
-#define STB_SPRINTF_IMPLEMENTATION
-#include "third_party/stb_sprintf.h"
+
+#ifndef STB_SPRINTF_H_INCLUDE
+    #ifndef STB_SPRINTF_IMPLEMENTATION
+        #define STB_SPRINTF_NOUNALIGNED
+        #define STB_SPRINTF_IMPLEMENTATION
+        #include "third_party/stb_sprintf.h"
+    #endif
+#endif
 
 #ifdef _WIN32
     #include <windows.h>
@@ -173,6 +180,4 @@ int eprintln(const char* fmt, ...)
 }
 
 #endif // PRINT_IMPLEMENTATION
-
-#endif // PRINT_H
       

@@ -2,6 +2,10 @@
 #ifndef FILE_H
 #define FILE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************
  *          INCLUDES
  ***************************************************************************/
@@ -29,7 +33,6 @@ enum
     FILE_ACCESS_SHARE_WRITE = 1 << 5
 };
 
-
 /***************************************************************************
  *          PROTOTYPES
  ***************************************************************************/
@@ -43,14 +46,39 @@ void     file_close    (File);
 
 int      file_write    (File, const char*, int);
 int      file_read     (File, char*, int);
-
 int64_t  file_size     (File file);
+
+#ifndef FILE_STANDALONE
+
+int      file_print     (File, const char* fmt, ...);
+int      file_println   (File, const char* fmt, ...);
+
+int      file_vprint    (File, const char* fmt, va_list);
+int      file_vprintln  (File, const char* fmt, va_list);
+
+#endif // FILE_STANDALONE
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // FILE_H
 
 /***************************************************************************
  *          IMPLEMENTATION
  ***************************************************************************/
 
 #ifdef FILE_IMPLEMENTATION
+
+#ifndef FILE_STANDALONE
+    #ifndef STB_SPRINTF_H_INCLUDE
+        #ifndef STB_SPRINTF_IMPLEMENTATION
+            #define STB_SPRINTF_NOUNALIGNED
+            #define STB_SPRINTF_IMPLEMENTATION
+            #include "third_party/stb_sprintf.h"
+        #endif
+    #endif
+#endif
 
 #ifdef _WIN32
     #include <windows.h>
@@ -181,10 +209,10 @@ int file_read(File file, char* buf, int len)
 int64_t file_size(File file)
 {
 #ifdef _WIN32
-    LARGE_INTEGER file_size = 0;
+    LARGE_INTEGER file_size = {0};
     BOOL success = GetFileSizeEx((HANDLE)file.fd, &file_size);
     if (success)
-        return (int64_t)file_size;
+        return (int64_t)file_size.QuadPart;
     else
         return 0;
 #else
@@ -194,7 +222,53 @@ int64_t file_size(File file)
 #endif
 }
 
-#endif // FILE_IMPLEMENTATION
 
-#endif // FILE_H
+#ifndef FILE_STANDALONE
+
+static char* print_file_cb(const char *buf, void* file, int len)
+{
+    File out = *((File*)file);
+    file_write(out, buf, len);
+    return (char *)buf;
+}
+
+int file_vprint(File file, const char *fmt, va_list ap)
+{
+    char buffer[STB_SPRINTF_MIN];
+    return stbsp_vsprintfcb(print_file_cb, (void*)&file, buffer, fmt, ap);
+}
+
+int file_vprintln(File file, const char *fmt, va_list ap)
+{
+    char buffer[STB_SPRINTF_MIN];
+    int result = stbsp_vsprintfcb(print_file_cb, (void*)&file, buffer, fmt, ap);
+
+    char* newline = NEWLINE;
+    int newline_len = NEWLINE_LEN;
+    result += file_write(file, newline, newline_len);
+
+    return result;
+}
+
+int file_print(File file, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = file_vprint(file, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+int file_println(File file, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = file_vprintln(file, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+#endif // FILE_STANDALONE
+
+#endif // FILE_IMPLEMENTATION
 

@@ -45,6 +45,8 @@ uint32_t   rand_binom   (uint32_t n, float p);
 }
 #endif
        
+#endif // RAND_H
+       
 /***************************************************************************
  *          IMPLEMENTATION
  ***************************************************************************/
@@ -185,5 +187,3 @@ uint32_t rand_binom(uint32_t n, float p)
 }
 
 #endif // RAND_IMPLEMENTATION
-
-#endif // RAND_H
