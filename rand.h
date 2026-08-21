@@ -18,6 +18,10 @@
 #ifndef RAND_H
 #define RAND_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************************************
  *          INCLUDES
  ***************************************************************************/
@@ -37,7 +41,9 @@ uint32_t   rand_pois    (float mu);
 bool       rand_bern    (float p);
 uint32_t   rand_binom   (uint32_t n, float p);
 
-#endif // RAND_H
+#ifdef __cplusplus
+}
+#endif
        
 /***************************************************************************
  *          IMPLEMENTATION
@@ -180,4 +186,4 @@ uint32_t rand_binom(uint32_t n, float p)
 
 #endif // RAND_IMPLEMENTATION
 
-
+#endif // RAND_H
