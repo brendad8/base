@@ -5,104 +5,26 @@
       #define DARRAY_IMPLEMENTATION
       #include "base/darray.h"
 
-
 ACKNOWLEDGMENTS
    
    Adapted from stb_ds.h - v0.67 
    public domain data structures - Sean Barrett 2019
    http://nothings.org/stb_ds 
-
-
-COMPILE-TIME OPTIONS
-
-  #define DARRAY_REALLOC_FUNC(context,ptr,size) user_defined_realloc
-  #define DARRAY_FREE_FUNC(context,ptr)         user_defined_free
-
-     These defines only need to be set in the file containing #define DARRAY_IMPLEMENTATION.
-
-     By default darray uses stdlib realloc() and free() for memory management. You can
-     substitute your own functions instead by defining these symbols. You must either
-     define both, or neither. Note that at the moment, 'context' will always be NULL.
-  
-  #define DARRAY_STATISTICS
-
-    Will include global darray_grow_count which tracks the number of times any dynamic 
-    array had to be resized. 
-
-  #define DARRAY_UNIT_TESTS
-
-     Defines a function stbds_unit_tests() that checks the functionality of the data structure.
-
-
-DOCUMENTATION
-
-  Declare an empty dynamic array of type T
-    T* t_arr = NULL;
-
-  Access the i'th item of a dynamic array 't_arr' of type T, T* t_arr:
-    t_arr[i]
-
-
-  size_t  darray_len          (T* array)                        - Returns number of elements in array          
-  size_t  darray_cap          (T* array)                        - Returns number of elements array can hold before resizing
-  
-  void    darray_set_len      (T* array)                        - Sets the length of the array. Leaves slots uninitialized
-  void    darray_set_cap      (T* array)                        - Sets the capacity of the array. Cannot shrink array
-  
-  T       darray_push         (T* array, T item)                - Copies item to end of array. Returns item
-  void    darray_pop          (T* array)                        - Removes last item from array and returns the item
-  
-  T*      darray_addn_ptr     (T* array, size_t n)              - Adds n unitialized items to array and returns pointer to first unitialized item
-  size_t  darray_addn_idx     (T* array, size_t n)              - Adds n unitialized items to array and returns index to first unitialized item
-  
-  T       darray_insert       (T* array, size_t i, T item)      - Copies item into ith index of array and shifts items to make space. Returns item.
-  void    darray_insert_n     (T* array, size_t i, size_t n)    - Creates room for n uninitialized entries starting from index i
-  
-  void    darray_delete       (T* array, size_t i)              - Deletes ith item from array and shifts items after down
-  void    darray_delete_n     (T* array, size_t i, size_t n)    - Detetes n items starting from index i and shifts items after down  
-  void    darray_delete_swap  (T* array, size_t i)              - Deletes ith item from array and swaps last item instead of shifting down
-  
-  void    darray_free         (T* array)                        - Frees array memory and sets array pointer to NULL
-
+        
 */
 
-#ifndef _DARRAY_H
-#define _DARRAY_H
+#ifndef DARRAY_H
+#define DARRAY_H
 
-//***************************************************************************
-//          INCLUDE FILES
-//***************************************************************************
+/***************************************************************************
+ *          INCLUDES
+ ***************************************************************************/
 
 #include <string.h> // for memmove
 
-//***************************************************************************
-//          TYPES
-//***************************************************************************
-
-typedef struct
-{
-  size_t length;
-  size_t capacity;
-
-} __ArrayHeader;
-
-//***************************************************************************
-//          FUNCTION PROTOTYPES
-//***************************************************************************
-
-extern void* __darray_grow(void* arr, size_t item_size, size_t add_len, size_t min_cap);
-
-#ifdef DARRAY_UNIT_TESTS
-    static void  darray_unit_tests(void);
-#endif
-
-//***************************************************************************
-//          MACROS
-//***************************************************************************
-
-#define __DARRAY_HEADER(a)         (((__ArrayHeader*)(a)) - 1)
-#define __DARRAY_GROW(a,add,cap)   ((a) = __darray_grow((a), sizeof *(a), (add), (cap)))
-#define __DARRAY_MAYBE_GROW(a,n)   ((!(a) || __DARRAY_HEADER(a)->length + (n) > __DARRAY_HEADER(a)->capacity) ? (__DARRAY_GROW(a,n,0),0) : 0)
+/***************************************************************************
+ *          MACROS
+ ***************************************************************************/
 
 #define darray_cap(a)             ((a) ? __DARRAY_HEADER(a)->capacity : 0)
 #define darray_len(a)             ((a) ? __DARRAY_HEADER(a)->length : 0)
@@ -125,11 +47,32 @@ extern void* __darray_grow(void* arr, size_t item_size, size_t add_len, size_t m
 
 #define darray_free(a)            ((void)((a) ? DARRAY_FREE_FUNC(NULL, __DARRAY_HEADER(a)) : (void)0), (a)=NULL)
 
-#endif // _ARRAY_H
+/***************************************************************************
+ *          HIDDEN
+ ***************************************************************************/
 
-//***************************************************************************
-//          FUNCTION IMPLEMENTATIONS
-//***************************************************************************
+typedef struct
+{
+  size_t length;
+  size_t capacity;
+
+} __ArrayHeader;
+
+extern void* __darray_grow(void* arr, size_t item_size, size_t add_len, size_t min_cap);
+
+#ifdef DARRAY_UNIT_TESTS
+    static void  darray_unit_tests(void);
+#endif
+
+#define __DARRAY_HEADER(a)         (((__ArrayHeader*)(a)) - 1)
+#define __DARRAY_GROW(a,add,cap)   ((a) = __darray_grow((a), sizeof *(a), (add), (cap)))
+#define __DARRAY_MAYBE_GROW(a,n)   ((!(a) || __DARRAY_HEADER(a)->length + (n) > __DARRAY_HEADER(a)->capacity) ? (__DARRAY_GROW(a,n,0),0) : 0)
+
+#endif // DARRAY_H
+
+/***************************************************************************
+ *          IMPLEMENTATIONS
+ ***************************************************************************/
 
 #ifdef DARRAY_IMPLEMENTATION
 
@@ -183,9 +126,7 @@ void* __darray_grow(void* arr, size_t item_size, size_t add_len, size_t min_cap)
 
 
 #ifdef DARRAY_UNIT_TESTS
-
 #include <stdio.h>
-
 
 #ifndef DARRAY_ASSERT
     #define DARRAY_ASSERT assert
@@ -195,22 +136,11 @@ void* __darray_grow(void* arr, size_t item_size, size_t add_len, size_t min_cap)
 typedef struct { int key,b,c,d; } test_struct;
 typedef struct { int key[2],b,c,d; } test_struct2;
 
-static char buffer[256];
-char* strkey(int n)
-{
-#if defined(_WIN32) && defined(__STDC_WANT_SECURE_LIB__)
-   sprintf_s(buffer, sizeof(buffer), "test_%d", n);
-#else
-   sprintf(buffer, "test_%d", n);
-#endif
-   return buffer;
-}
-
 static void darray_unit_tests(void)
 {
     const int testsize = 100000;
     const int testsize2 = testsize/20;
-    int *arr=null;
+    int *arr = NULL;
     int i,j;
 
     DARRAY_ASSERT(darray_len(arr)==0);
@@ -241,6 +171,5 @@ static void darray_unit_tests(void)
         darray_free(arr);
     }
 }
-
 #endif // DARRAY_UNIT_TESTS
 
