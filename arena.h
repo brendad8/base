@@ -17,12 +17,21 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int ArenaFlags;
+enum
+{
+    ARENA_NO_CHAIN    = 1 << 2;
+    ARENA_LARGE_PAGES = 1 << 3;
+
+}
+
 typedef struct ArenaParams ArenaParams;
 struct ArenaParams
 {
     uint64_t commit_size;    // size of memory chunks when committing memory from os
     uint64_t reserve_size;   // size of vmemory address space when reserving memory from os or capacity of backing memory
     uint8_t* backing_memory; // backing memory to use for arena instead of committing mem from os
+    ArenaFlags flags;
 };
 
 typedef struct Arena Arena;
