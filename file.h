@@ -34,16 +34,17 @@ enum
  *          PROTOTYPES
  ***************************************************************************/
 
-File   file_stdin    (void);
-File   file_stdout   (void);
-File   file_stderr   (void);
+File     file_stdin    (void);
+File     file_stdout   (void);
+File     file_stderr   (void);
 
-File   file_open     (char*, FileAccessFlags);
-void   file_close    (File);
+File     file_open     (char*, FileAccessFlags);
+void     file_close    (File);
 
-int    file_write    (File, const char*, int);
+int      file_write    (File, const char*, int);
+int      file_read     (File, char*, int);
 
-#endif // FILE_H
+int64_t  file_size     (File file);
 
 /***************************************************************************
  *          IMPLEMENTATION
@@ -52,7 +53,11 @@ int    file_write    (File, const char*, int);
 #ifdef FILE_IMPLEMENTATION
 
 #ifdef _WIN32
-#include "windows.h"
+    #include <windows.h>
+#else
+    #include <fcntl.h>
+    #include <unistd.h>
+    #include <sys/stat.h>
 #endif
 
 File file_stdin(void)
@@ -88,10 +93,10 @@ File file_stderr(void)
     return result;
 }
 
-File file_open(char* file_name, FileAccessFlags flags)
+File file_open(char* path, FileAccessFlags flags)
 {
     File result = {0};
-
+#ifdef _WIN32
     DWORD access_flags = 0;
     DWORD share_mode = 0;
     DWORD creation_disposition = OPEN_EXISTING;
@@ -104,32 +109,92 @@ File file_open(char* file_name, FileAccessFlags flags)
     if(flags & FILE_ACCESS_WRITE)       {creation_disposition = CREATE_ALWAYS;}
     if(flags & FILE_ACCESS_APPEND)      {creation_disposition = OPEN_ALWAYS; access_flags |= FILE_APPEND_DATA; }
 
-    HANDLE file = CreateFileA(file_name, access_flags, share_mode, NULL, creation_disposition, FILE_ATTRIBUTE_NORMAL, 0);
-    if(file != INVALID_HANDLE_VALUE)
+    HANDLE handle = CreateFileA(path, access_flags, share_mode, NULL, creation_disposition, FILE_ATTRIBUTE_NORMAL, 0);
+    if(handle != INVALID_HANDLE_VALUE)
     {
-        result.fd = (uint64_t)file;
+        result.fd = (uint64_t)handle;
     }
     else
     {
         DWORD err = GetLastError();
         (void)err;
     }
+#else
+    int open_flags = 0;
+    if ((flags & FILE_ACCESS_READ) && (flags & FILE_ACCESS_WRITE))
+        open_flags = O_RDWR;
+    else if (flags & FILE_ACCESS_WRITE)
+        open_flags = O_WRONLY;
+    else if (flags & FILE_ACCESS_READ)
+        open_flags = O_RDONLY;
+
+    if (flags & FILE_ACCESS_APPEND)
+        open_flags |= O_APPEND;
+
+    if (flags & (FILE_ACCESS_WRITE | FILE_ACCESS_APPEND))
+        open_flags |= O_CREAT;
+
+    open_flags |= O_CLOEXEC;
+
+    int fd = open((char *)path, open_flags, 0755);
+    if(fd != -1)
+    {
+        result.fd = fd;
+    }
+#endif
     return result;
 }
 
 void file_close(File file)
 {
+#ifdef _WIN32
     HANDLE handle = (HANDLE)file.fd;
-    BOOL result = CloseHandle(handle);
-    (void)result;
+    CloseHandle(handle);
+#else
+    close(file.fd);
+#endif
+    file.fd = 0;
 }
 
 int file_write(File file, const char* buf, int len)
 {
-    DWORD written;
-    WriteFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, &written, NULL);
-    return written;
+    int result;
+#ifdef _WIN32
+    WriteFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
+#else
+    result = (int)write((int)file.fd, buf, (size_t)len);
+#endif
+    return result;
 }
 
+int file_read(File file, char* buf, int len)
+{
+    int result;
+#ifdef _WIN32
+    ReadFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
+#else
+    result = (int)read((int)file.fd, (void*)buf, (size_t)len);
+#endif
+    return result;
+}
+
+int64_t file_size(File file)
+{
+#ifdef _WIN32
+    LARGE_INTEGER file_size = 0;
+    BOOL success = GetFileSizeEx((HANDLE)file.fd, &file_size);
+    if (success)
+        return (int64_t)file_size;
+    else
+        return 0;
+#else
+    struct stat file_stats = {0};
+    fstat(file.fd, &file_stats);
+    return (int64_t)file_stats.st_size;
+#endif
+}
 
 #endif // FILE_IMPLEMENTATION
+
+#endif // FILE_H
+
