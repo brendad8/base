@@ -22,8 +22,6 @@ extern "C" {
 
 #include <stdarg.h>
 
-#include "file.h"
-
 /***************************************************************************
  *          PROTOTYPES
  ***************************************************************************/
@@ -31,14 +29,14 @@ extern "C" {
 int   print      (const char *fmt, ...);
 int   println    (const char *fmt, ...);
 
-int   fprint     (File, const char* fmt, ...);
-int   fprintln   (File, const char* fmt, ...);
+int   eprint     (const char *fmt, ...);
+int   eprintln   (const char *fmt, ...);
 
 int   vprint     (const char* fmt, va_list);
 int   vprintln   (const char* fmt, va_list);
 
-int   vfprint    (File, const char* fmt, va_list);
-int   vfprintln  (File, const char* fmt, va_list);
+int   veprint    (const char* fmt, va_list);
+int   veprintln  (const char* fmt, va_list);
 
 #ifdef __cplusplus
 }
@@ -66,86 +64,83 @@ int   vfprintln  (File, const char* fmt, va_list);
 #endif
 
 
-static File get_stdout(void)
-{
-    File result = {0};
-#ifdef _WIN32
-    result.fd = (uint64_t)GetStdHandle(STD_OUTPUT_HANDLE);
-#else
-    result.fd = (uint64_t)STDOUT_FILENO;
-#endif
-    return result;
-}
-
-static int print_file_write(File file, const char* buf, int len)
+static int print_write_stdout(const char* buf, int len)
 {
     int result;
 #ifdef _WIN32
-    WriteFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
+    HANDLE std_out = GetStdHandle(STD_OUTPUT_HANDLE);
+    WriteFile(std_out, (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
 #else
-    result = (int)write((int)file.fd, buf, (size_t)len);
+    result = (int)write(STDOUT_FILENO, buf, (size_t)len);
 #endif
     return result;
 }
 
-static char* print_cb(const char *buf, void* file, int len)
+static int print_write_stderr(const char* buf, int len)
 {
-    File out = *(File*)file;
-    print_file_write(out, buf, len);
+    int result;
+#ifdef _WIN32
+    HANDLE std_out = GetStdHandle(STD_ERROR_HANDLE);
+    WriteFile(std_out, (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
+#else
+    result = (int)write(STDERR_FILENO, buf, (size_t)len);
+#endif
+    return result;
+}
+
+static char* print_stdout_cb(const char *buf, void* file, int len)
+{
+    print_write_stdout(buf, len);
     return (char *)buf;
 }
 
-int vfprint(File file, const char *fmt, va_list ap)
+static char* print_stderr_cb(const char *buf, void* file, int len)
 {
-    char buffer[STB_SPRINTF_MIN];
-    return stbsp_vsprintfcb(print_cb, (void*)&file, buffer, fmt, ap);
+    print_write_stderr(buf, len);
+    return (char *)buf;
 }
 
 int vprint(const char *fmt, va_list ap)
 {
-    return vfprint(get_stdout(), fmt, ap);
-}
-
-int vfprintln(File file, const char *fmt, va_list ap)
-{
     char buffer[STB_SPRINTF_MIN];
-    int result = stbsp_vsprintfcb(print_cb, (void*)&file, buffer, fmt, ap);
-
-    char* newline = NEWLINE;
-    int newline_len = NEWLINE_LEN;
-    result += print_file_write(file, newline, newline_len);
-
-    return result;
+    return stbsp_vsprintfcb(print_stdout_cb, NULL, buffer, fmt, ap);
 }
 
 int vprintln(const char *fmt, va_list ap)
 {
-    return vfprintln(get_stdout(), fmt, ap);
+    char buffer[STB_SPRINTF_MIN];
+    int result = stbsp_vsprintfcb(print_stdout_cb, NULL, buffer, fmt, ap);
+
+    char* newline = NEWLINE;
+    int newline_len = NEWLINE_LEN;
+    result += print_write_stdout(newline, newline_len);
+
+    return result;
 }
 
-int fprint(File file, const char *fmt, ...)
+int veprint(const char *fmt, va_list ap)
 {
-    va_list ap;
-    va_start(ap, fmt);
-    int ret = vfprint(file, fmt, ap);
-    va_end(ap);
-    return ret;
+    char buffer[STB_SPRINTF_MIN];
+    return stbsp_vsprintfcb(print_stderr_cb, NULL, buffer, fmt, ap);
 }
 
-int fprintln(File file, const char *fmt, ...)
+int veprintln(const char *fmt, va_list ap)
 {
-    va_list ap;
-    va_start(ap, fmt);
-    int ret = vfprintln(file, fmt, ap);
-    va_end(ap);
-    return ret;
+    char buffer[STB_SPRINTF_MIN];
+    int result = stbsp_vsprintfcb(print_stderr_cb, NULL, buffer, fmt, ap);
+
+    char* newline = NEWLINE;
+    int newline_len = NEWLINE_LEN;
+    result += print_write_stderr(newline, newline_len);
+
+    return result;
 }
 
 int print(const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    int ret = vfprint(get_stdout(), fmt, ap);
+    int ret = vprint(fmt, ap);
     va_end(ap);
     return ret;
 }
@@ -154,7 +149,25 @@ int println(const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    int ret = vfprintln(get_stdout(), fmt, ap);
+    int ret = vprintln(fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+int eprint(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = veprint(fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+int eprintln(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = veprintln(fmt, ap);
     va_end(ap);
     return ret;
 }
