@@ -5,11 +5,11 @@
       #define DARRAY_IMPLEMENTATION
       #include "base/darray.h"
 
-ACKNOWLEDGMENTS
+   ACKNOWLEDGMENTS
    
-   Adapted from stb_ds.h - v0.67 
-   public domain data structures - Sean Barrett 2019
-   http://nothings.org/stb_ds 
+      Adapted from stb_ds.h - v0.67 
+      public domain data structures - Sean Barrett 2019
+      http://nothings.org/stb_ds 
         
 */
 

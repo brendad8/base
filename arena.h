@@ -5,6 +5,11 @@
       #define ARENA_IMPLEMENTATION
       #include "base/arena.h"
 
+   ACKNOWLEDGMENTS
+   
+      Adapted from base_arena.h 
+      The RAD Debugger Project - Ryan Fleury
+      https://github.com/EpicGames/raddebugger
 */
 
 #ifndef ARENA_H
@@ -14,10 +19,16 @@
 extern "C" {
 #endif
 
+/***************************************************************************
+ *          INCLUDES
+ ***************************************************************************/
+
 #include <stddef.h>
 #include <stdint.h>
 
-#define ARENA_HEADER_SIZE 128
+/***************************************************************************
+ *          TYPES
+ ***************************************************************************/
 
 typedef int ArenaFlags;
 enum
@@ -56,6 +67,10 @@ struct ArenaTemp
     uint64_t pos;   // position when created
 };
 
+/***************************************************************************
+ *          PROTOTYPES
+ ***************************************************************************/
+
 Arena*    arena_alloc              (ArenaParams);
 void      arena_release            (Arena* arena);
 
@@ -88,7 +103,13 @@ void      arena_temp_end           (ArenaTemp temp);
 
 #endif // ARENA_H
 
+/***************************************************************************
+ *          IMPLEMENTATION
+ ***************************************************************************/
+
 #ifdef ARENA_IMPLEMENTATION
+
+#define ARENA_HEADER_SIZE 128
 
 #include <assert.h>
 #include <stdbool.h>
@@ -108,6 +129,7 @@ static const uint64_t arena_default_alignment = sizeof(void*);
 #define ARENA_STACK_PUSH_N(first, node, next) \
     ((node)->next = (first), (first) = (node))
 
+
 typedef struct
 {
     uint64_t page_size;
@@ -115,11 +137,12 @@ typedef struct
 
 } VirtualMemoryInfo;
 
-static  VirtualMemoryInfo  vm_get_info   (void);
-static  void*              vm_reserve    (uint64_t size);
-static  bool               vm_commit     (void* ptr, uint64_t size);
-static  bool               vm_decommit   (void* ptr, uint64_t size);
-static  void               vm_release    (void* ptr, uint64_t size);
+static VirtualMemoryInfo  vm_get_info   (void);
+static void*              vm_reserve    (uint64_t size);
+static bool               vm_commit     (void* ptr, uint64_t size);
+static bool               vm_decommit   (void* ptr, uint64_t size);
+static void               vm_release    (void* ptr, uint64_t size);
+
 
 Arena* arena_alloc(ArenaParams* params)
 {
