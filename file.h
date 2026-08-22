@@ -44,26 +44,25 @@ enum
  *          PROTOTYPES
  ***************************************************************************/
 
-File     file_stdin    (void);
-File     file_stdout   (void);
-File     file_stderr   (void);
+File           file_stdin    (void);
+File           file_stdout   (void);
+File           file_stderr   (void);
 
-File     file_open     (char*, FileAccessFlags);
-void     file_close    (File);
+File           file_open     (char*, FileAccessFlags);
+void           file_close    (File);
 
-int      file_write    (File, const char*, int);
-int      file_read     (File, char*, int);
-int64_t  file_size     (File file);
+int            file_write    (File, const char*, int);
+int            file_read     (File, char*, int);
 
-#ifndef FILE_STANDALONE
+int64_t        file_get_size (File file);
+int64_t        file_get_pos  (File file);
+int64_t        file_set_pos  (File file);
 
-int      file_print     (File, const char* fmt, ...);
-int      file_println   (File, const char* fmt, ...);
+int            file_print     (File, const char* fmt, ...);
+int            file_println   (File, const char* fmt, ...);
 
-int      file_vprint    (File, const char* fmt, va_list);
-int      file_vprintln  (File, const char* fmt, va_list);
-
-#endif // FILE_STANDALONE
+int            file_vprint    (File, const char* fmt, va_list);
+int            file_vprintln  (File, const char* fmt, va_list);
 
 #ifdef __cplusplus
 }
@@ -77,13 +76,11 @@ int      file_vprintln  (File, const char* fmt, va_list);
 
 #ifdef FILE_IMPLEMENTATION
 
-#ifndef FILE_STANDALONE
-    #ifndef STB_SPRINTF_H_INCLUDE
-        #ifndef STB_SPRINTF_IMPLEMENTATION
-            #define STB_SPRINTF_NOUNALIGNED
-            #define STB_SPRINTF_IMPLEMENTATION
-            #include "third_party/stb_sprintf.h"
-        #endif
+#ifndef STB_SPRINTF_H_INCLUDE
+    #ifndef STB_SPRINTF_IMPLEMENTATION
+        #define STB_SPRINTF_NOUNALIGNED
+        #define STB_SPRINTF_IMPLEMENTATION
+        #include "third_party/stb_sprintf.h"
     #endif
 #endif
 
@@ -217,7 +214,7 @@ int file_read(File file, char* buf, int len)
     return result;
 }
 
-int64_t file_size(File file)
+int64_t file_get_size(File file)
 {
 #ifdef _WIN32
     LARGE_INTEGER file_size = {0};
@@ -233,8 +230,62 @@ int64_t file_size(File file)
 #endif
 }
 
+int64_t file_get_pos(File file)
+{
+    int64_t result = 0;
+#ifdef _WIN32
+    LARGE_INTEGER zero = {0};
+    LARGE_INTEGER position;
 
-#ifndef FILE_STANDALONE
+    if (!SetFilePointerEx((Handle)file.fd, zero, &position, FILE_CURRENT))
+        result = -1;
+    else
+        result =(int64_t)position.QuadPart;
+#else
+    off_t pos = lseek(fd, 0, SEEK_CUR);
+    if (pos == (off_t)-1)
+        result = -1;
+    else 
+        result = (int64_t)pos;
+#endif
+    return result;
+}
+
+int64_t file_get_pos(File file)
+{
+    int64_t result = 0;
+#ifdef _WIN32
+    LARGE_INTEGER zero = {0};
+    LARGE_INTEGER position;
+    if (SetFilePointerEx((Handle)file.fd, zero, &position, FILE_CURRENT))
+        result = -1;
+    else
+        result = (int64_t)position.QuadPart;
+#else
+    off_t pos = lseek(fd, 0, SEEK_CUR);
+    if (pos == (off_t)-1)
+        result = -1;
+    else
+        result = (int64_t)pos;
+#endif
+    return result;
+}
+
+bool file_set_pos(File file, int64_t pos)
+{
+#ifdef _WIN32
+    LARGE_INTEGER offset;
+    offset.QuadPart = position;
+    if (!SetFilePointerEx(file, pos, NULL, FILE_BEGIN))
+        return false;
+#else
+    off_t result = lseek(fd, position, SEEK_SET);
+    if (result == (off_t)-1)
+        return false;
+#endif
+    return true;
+}
+
 
 static char* print_file_cb(const char *buf, void* file, int len)
 {
@@ -278,8 +329,6 @@ int file_println(File file, const char *fmt, ...)
     va_end(ap);
     return ret;
 }
-
-#endif // FILE_STANDALONE
 
 #endif // FILE_IMPLEMENTATION
 
