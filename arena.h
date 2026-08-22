@@ -76,11 +76,11 @@ void      arena_clear              (Arena* arena);
 ArenaTemp arena_temp_begin         (Arena* arena);
 void      arena_temp_end           (ArenaTemp temp);
 
-#define ARENA_PUSH_ARRAY(arena, type, count)         (type*)arena_push((arena), sizeof(type)*(count))
-#define ARENA_PUSH_ARRAY_NO_ZERO(arena, type, count) (type*)arena_push_no_zero((arena), sizeof(type)*(count))
+#define arena_push_array(arena, type, count)         (type*)arena_push((arena), sizeof(type)*(count))
+#define arena_push_array_no_zero(arena, type, count) (type*)arena_push_no_zero((arena), sizeof(type)*(count))
 
-#define ARENA_PUSH_STRUCT(arena, type)               (type*)arena_push((arena), sizeof(type))
-#define ARENA_PUSH_STRUCT_NO_ZERO(arena, type)       (type*)arena_push_no_zero((arena), sizeof(type))
+#define arena_push_struct(arena, type)               (type*)arena_push((arena), sizeof(type))
+#define arena_push_struct_no_zero(arena, type)       (type*)arena_push_no_zero((arena), sizeof(type))
 
 #ifdef __cplusplus
 }
@@ -90,18 +90,23 @@ void      arena_temp_end           (ArenaTemp temp);
 
 #ifdef ARENA_IMPLEMENTATION
 
+#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 
-static const uint64_t arena_default_alignment    = sizeof(void*);
-static const uint64_t arena_default_commit_size  = (((uint64_t)64) << 10); // 64 KB
-static const uint64_t arena_default_reserve_size = (((uint64_t)64) << 20); // 64 MB
+static const uint64_t arena_default_alignment = sizeof(void*);
 
-#define __ARENA_ALIGN_UP_POW2(x,b) \
+#define ARENA_MAX(a,b) \
+    (((a) > (b)) ? (a) : (b))
+
+#define ARENA_ALIGN_UP_POW2(x,b) \
     (((x) + (b) - 1)&(~((b) - 1)))
 
-#define __ARENA_CLAMP(min,val,max) \
+#define ARENA_CLAMP(min,val,max) \
     (((val)<(min))?(min):((val)>(max))?(max):(val))
+
+#define ARENA_STACK_PUSH_N(first, node, next) \
+    ((node)->next = (first), (first) = (node))
 
 typedef struct
 {
@@ -134,8 +139,8 @@ Arena* arena_alloc(ArenaParams* params)
 
         VirtualMemoryInfo info = vm_get_info();
 
-        commit_size  = __ARENA_ALIGN_UP_POW2(commit_size, info.page_size);
-        reserve_size = __ARENA_ALIGN_UP_POW2(reserve_size, info.page_size);
+        commit_size  = ARENA_ALIGN_UP_POW2(commit_size, info.page_size);
+        reserve_size = ARENA_ALIGN_UP_POW2(reserve_size, info.page_size);
 
         base = vm_reserve(reserve_size);
         vm_commit(base, commit_size)) 
@@ -171,40 +176,56 @@ void arena_release(Arena* arena)
 
 static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool zero)
 {
-    uint64_t new_pos = __ARENA_ALIGN_UP_POW2(arena->pos, align);
+    uint64_t size_to_zero = size;
+    Arena* current = arena->current;
+
+    uint64_t new_pos = ARENA_ALIGN_UP_POW2(current->pos, align);
     uint64_t new_pos_end = new_pos + size;
 
-    if (new_pos_end > arena->committed)
+    if (new_pos_end > current->reserved && !(arena->flags & ARENA_NO_CHAIN))
     {
-        // NOTE(bcall): backing buffer case where arena cannot grow
-        if (arena->commit_size == 0)
-            return NULL;
-        
-        // NOTE(bcall): commit enough memory to fit new allocation 
-        // and be aligned with os commit size
-        uint64_t commit_size = __ARENA_ALIGN_UP_POW2(new_pos_end, arena->commit_size) - arena->committed;
+        Arena* new_arena = NULL;
+        ArenaParams new_params = {0};
 
-        if (arena->committed + commit_size <= arena->reserved)
-        {
-            // NOTE(bcall): commit new memory starting from end of 
-            // initially commited region
-            uint8_t* commit_end_ptr = arena->base + arena->committed;
-            if (!vm_commit(commit_end_ptr, commit_size)) 
-                return NULL;
+        new_params.commit_size = arena->commit_size;
+        new_params.reserve_size = arena->reserve_size;
 
-            arena->committed += commit_size;
-        }
-        else
+        if (size > new_params.reserve_size - ARENA_HEADER_SIZE)
         {
-            return NULL;
+            new_params.reserve_size = ARENA_ALIGN_UP_POW2(size + ARENA_HEADER_SIZE, align);
+            new_params.commit_size = reserve_size;
         }
+
+        new_params->flags = arena->flags
+        new_arena = arena_alloc(new_params);
+
+        new_arena->base_pos = current->base_pos + current->reserved;
+        ARENA_STACK_PUSH_N(arena->current, new_arena, prev);
+
+        current = new_arena;
+        pos_new = ARENA_ALIGN_UP_POW2(current->pos, align);
+        pos_new_end = pos_new + size;
+    }
+    else if (arena->committed < new_pos_end)
+    {
+        uint64_t commit_size = ARENA_ALIGN_UP_POW2(pos_new_end, current->commit_size) - current->committed;
+        char* commit_start = (char *)current + current->committed;
+        vm_commit(commit_start, commit_size);
+        current->committed += commit_size;
+        size_to_zero = 0;
     }
 
-    arena->pos = new_pos_end;
-    void* result = arena->base + new_pos;
-    if (zero) memset(result, 0, size);
+    void* result = NULL;
+    if(current->committed >= pos_new_end)
+    {
+        result = (char*)current + new_pos;
+        current->pos = new_pos_end;
 
-    return result;
+        if (zero)
+            memset(result, 0, size_to_zero);
+    }
+  
+  return result;
 }
 
 void* arena_push(Arena* arena, uint64_t size)
@@ -227,23 +248,43 @@ void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align)
     return arena_push_impl(arena, size, align, 0);
 }
 
-void arena_pop_to(Arena* arena, uint64_t new_pos)
+uint64_t arena_position(Arena *arena)
 {
-    uint64_t pos = arena->pos;
-    new_pos = __ARENA_CLAMP(sizeof(Arena), new_pos, pos);
-    arena->pos = new_pos;
+  Arena* current = arena->current;
+  return current->base_pos + current->pos;
 }
 
-void arena_pop(Arena* arena, uint64_t size)
+void arena_pop_to(Arena *arena, uint64_t pos)
 {
-    uint64_t pos = arena->pos;
-    uint64_t pos_new = (size < pos) ? pos - size : sizeof(Arena);
-    arena_pop_to(arena, pos_new);
+    pos = ARENA_MAX(ARENA_HEADER_SIZE, pos);
+    Arena* current = arena->current;
+
+    for (Arena* prev = NULL; current->base_pos >= pos; current = prev)
+    {
+        prev = current->prev;
+        vm_release(current, current->reserved);
+    }
+
+    arena->current = current;
+    uint64_t new_pos = pos - current->base_pos;
+    assert(new_pos <= current->pos);
+    current->pos = new_pos;
 }
 
 void arena_clear(Arena* arena)
 {
     arena_pop_to(arena, 0);
+}
+
+void arena_pop(Arena *arena, uint64_t amount)
+{
+    uint64_t pos_old = arena_pos(arena);
+    uint64_t pos_new = pos_old;
+    if (amount < pos_old)
+    {
+        pos_new = pos_old - amount;
+    }
+    arena_pop_to(arena, pos_new);
 }
 
 ArenaTemp arena_temp_begin(Arena* arena)
@@ -258,107 +299,87 @@ void arena_temp_end(ArenaTemp temp)
 }
 
 #if defined(_WIN32)
-#include <windows.h>
+    #include <windows.h>
+#else
+    #include <sys/mman.h>
+    #include <unistd.h>
+#else
+    error: arena not defined for this os
+#endif
+
 
 static VirtualMemoryInfo vm_get_info(void)
 {
+    VirtualMemoryInfo info = {0};
+#if defined(_WIN32)
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
-
-    VirtualMemoryInfo info = {0};
     info.page_size = (uint64_t)sysinfo.dwPageSize;
     info.allocation_granularity = (uint64_t)sysinfo.dwAllocationGranularity;
+#else
+    uint64_t page_size = (uint64_t)sysconf(_SC_PAGESIZE);
+    info.page_size = page_size;
+    info.allocation_granularity = page_size;
+#endif
     return info;
 }
 
 static void* vm_reserve(uint64_t size)
 {
+    void* result = NULL;
     VirtualMemoryInfo info = vm_get_info();
-    size = __ARENA_ALIGN_UP_POW2(size, info.allocation_granularity);
-    void* ptr = VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_NOACCESS);
+    size = ARENA_ALIGN_UP_POW2(size, info.allocation_granularity);
+#if defined(_WIN32)
+    ptr = VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_NOACCESS);
+#else
+    ptr = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#endif
     return ptr;
 }
 
 static bool vm_commit(void* ptr, uint64_t size)
 {
     VirtualMemoryInfo info = vm_get_info();
-    size = __ARENA_ALIGN_UP_POW2(size, info.page_size);
-
+    size = ARENA_ALIGN_UP_POW2(size, info.page_size);
+#if defined(_WIN32)
     void* result = VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
-
     return (result != NULL);
-}
-
-bool vm_decommit(void* ptr, uint64_t size)
-{
-    VirtualMemoryInfo info = vm_get_info();
-    size = __ARENA_ALIGN_UP_POW2(size, info.page_size);
- 
-    BOOL result = VirtualFree(ptr, size, MEM_DECOMMIT);
-
-    return (result != 0);
-}
-
-void vm_release(void* ptr, uint64_t size)
-{
-    (void)size;
-    VirtualFree(ptr, 0, MEM_RELEASE);
-}
-
-#elif defined(__linux__)
-
-#include <sys/mman.h>
-#include <unistd.h>
-
-VirtualMemoryInfo vm_get_info(void)
-{
-    uint64_t page_size = (uint64_t)sysconf(_SC_PAGESIZE);
-    VirtualMemoryInfo info = {0};
-    info.page_size = page_size;
-    info.allocation_granularity = page_size;
-
-    return info;
-}
-
-void* vm_reserve(uint64_t size)
-{
-    VirtualMemoryInfo info = vm_get_info();
-    size = __ARENA_ALIGN_UP_POW2(size, info.allocation_granularity);
-    void* ptr = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (ptr == MAP_FAILED)
-        return NULL;
-
-    return ptr;
-}
-
-bool vm_commit(void* ptr, uint64_t size)
-{
-    VirtualMemoryInfo info = vm_get_info();
-    size = __ARENA_ALIGN_UP_POW2(size, info.page_size);
+#else
     int result = mprotect(ptr, size, PROT_READ | PROT_WRITE);
-
     return (result == 0);
+#endif
 }
 
 bool vm_decommit(void* ptr, uint64_t size)
 {
     VirtualMemoryInfo info = vm_get_info();
-    size = __ARENA_ALIGN_UP_POW2(size, info.page_size);
+    size = ARENA_ALIGN_UP_POW2(size, info.page_size);
+#if defined(_WIN32)
+    BOOL result = VirtualFree(ptr, size, MEM_DECOMMIT);
+    return (result != 0);
+#else
     int result = madvise(ptr, size, MADV_DONTNEED);
     mprotect(ptr, size, PROT_NONE);
-
     return (result == 0);
+#endif
 }
 
 void vm_release(void* ptr, uint64_t size)
 {
+#if defined(_WIN32)
+    (void)size;
+    VirtualFree(ptr, 0, MEM_RELEASE);
+#else
     munmap(ptr, size);
+#endif
 }
 
 #endif
 
-#undef __ARENA_ALIGN_UP_POW2
-#undef __ARENA_CLAMP
+#undef ARENA_MAX
+#undef ARENA_STACK_PUSH_N
+#undef ARENA_ALIGN_UP_POW2
+#undef ARENA_CLAMP
 
 #endif // ARENA_IMPLEMENTATION
 
