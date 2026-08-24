@@ -25,6 +25,12 @@ extern "C" {
 #include "file.h"
 
 /***************************************************************************
+ *          MACROS
+ ***************************************************************************/
+
+#define prints(str) println("%s", str)
+
+/***************************************************************************
  *          PROTOTYPES
  ***************************************************************************/
 
@@ -37,12 +43,12 @@ int   eprintln   (const char* fmt, ...);
 int   fprint     (File file, const char* fmt, ...);
 int   fprintln   (File file, const char* fmt, ...);
 
-int   bprint     (char* buf, int n, const char* fmt, ...);
+int   bnprint    (char* buf, int n, const char* fmt, ...);
 
 int   vfprint    (File file, const char* fmt, va_list);
 int   vfprintln  (File file, const char* fmt, va_list);
 
-int   vbprint    (char* buf, int n, const char* fmt, va_list);
+int   vbnprint   (char* buf, int n, const char* fmt, va_list);
 
 
 #ifdef __cplusplus
@@ -215,12 +221,12 @@ int eprintln(const char* fmt, ...)
     return ret;
 }
 
-int vbprint(char* buf, int n, const char *fmt, va_list ap)
+int vbnprint(char* buf, int n, const char *fmt, va_list ap)
 {
     return stbsp_vsnprintf(buf, n, fmt, ap);
 }
 
-int bprint(char* buf, int n, const char* fmt, ...)
+int bnprint(char* buf, int n, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
