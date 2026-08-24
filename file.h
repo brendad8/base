@@ -58,11 +58,6 @@ int64_t        file_get_size (File file);
 int64_t        file_get_pos  (File file);
 int64_t        file_set_pos  (File file);
 
-int            file_print     (File, const char* fmt, ...);
-int            file_println   (File, const char* fmt, ...);
-
-int            file_vprint    (File, const char* fmt, va_list);
-int            file_vprintln  (File, const char* fmt, va_list);
 
 #ifdef __cplusplus
 }
@@ -75,14 +70,6 @@ int            file_vprintln  (File, const char* fmt, va_list);
  ***************************************************************************/
 
 #ifdef FILE_IMPLEMENTATION
-
-#ifndef STB_SPRINTF_H_INCLUDE
-    #ifndef STB_SPRINTF_IMPLEMENTATION
-        #define STB_SPRINTF_NOUNALIGNED
-        #define STB_SPRINTF_IMPLEMENTATION
-        #include "third_party/stb_sprintf.h"
-    #endif
-#endif
 
 #ifdef _WIN32
     #include <windows.h>
@@ -284,50 +271,6 @@ bool file_set_pos(File file, int64_t pos)
         return false;
 #endif
     return true;
-}
-
-
-static char* print_file_cb(const char *buf, void* file, int len)
-{
-    File out = *((File*)file);
-    file_write(out, buf, len);
-    return (char *)buf;
-}
-
-int file_vprint(File file, const char *fmt, va_list ap)
-{
-    char buffer[STB_SPRINTF_MIN];
-    return stbsp_vsprintfcb(print_file_cb, (void*)&file, buffer, fmt, ap);
-}
-
-int file_vprintln(File file, const char *fmt, va_list ap)
-{
-    char buffer[STB_SPRINTF_MIN];
-    int result = stbsp_vsprintfcb(print_file_cb, (void*)&file, buffer, fmt, ap);
-
-    char* newline = NEWLINE;
-    int newline_len = NEWLINE_LEN;
-    result += file_write(file, newline, newline_len);
-
-    return result;
-}
-
-int file_print(File file, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    int ret = file_vprint(file, fmt, ap);
-    va_end(ap);
-    return ret;
-}
-
-int file_println(File file, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    int ret = file_vprintln(file, fmt, ap);
-    va_end(ap);
-    return ret;
 }
 
 #endif // FILE_IMPLEMENTATION

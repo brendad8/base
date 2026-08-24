@@ -129,7 +129,6 @@ static const uint64_t arena_default_alignment = sizeof(void*);
 #define ARENA_STACK_PUSH_N(first, node, next) \
     ((node)->next = (first), (first) = (node))
 
-
 typedef struct
 {
     uint64_t page_size;
@@ -142,7 +141,6 @@ static void*              vm_reserve    (uint64_t size);
 static bool               vm_commit     (void* ptr, uint64_t size);
 static bool               vm_decommit   (void* ptr, uint64_t size);
 static void               vm_release    (void* ptr, uint64_t size);
-
 
 Arena* arena_alloc(ArenaParams* params)
 {
@@ -326,8 +324,6 @@ void arena_temp_end(ArenaTemp temp)
 #else
     #include <sys/mman.h>
     #include <unistd.h>
-#else
-    error: arena not defined for this os
 #endif
 
 
