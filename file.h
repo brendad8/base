@@ -40,24 +40,43 @@ enum
     FILE_ACCESS_SHARE_WRITE = 1 << 5
 };
 
+typedef int FileIterFlags;
+enum
+{
+  FILE_ITER_SKIP_DIRS    = (1 << 0),
+  FILE_ITER_SKIP_FILES   = (1 << 1),
+  FILE_ITER_SKIP_HIDDEN  = (1 << 2),
+  FILE_ITER_DONE         = (1 << 31)
+};
+
+typedef struct
+{
+  FileIterFlags flags;
+  char memory[800];
+
+} FileIter;
+
 /***************************************************************************
  *          PROTOTYPES
  ***************************************************************************/
 
-File           file_stdin    (void);
-File           file_stdout   (void);
-File           file_stderr   (void);
+File      file_stdin        (void);
+File      file_stdout       (void);
+File      file_stderr       (void);
 
-File           file_open     (char*, FileAccessFlags);
-void           file_close    (File);
+File      file_open         (char*, FileAccessFlags);
+void      file_close        (File);
 
-int            file_write    (File, const char*, int);
-int            file_read     (File, char*, int);
+int       file_write        (File, const char*, int);
+int       file_read         (File, char*, int);
 
-int64_t        file_get_size (File file);
-int64_t        file_get_pos  (File file);
-int64_t        file_set_pos  (File file);
+int64_t   file_get_size     (File file);
+int64_t   file_get_pos      (File file);
+int       file_set_pos      (File file, int64_t pos);
 
+bool      file_iter_start   (FileIter* iter, char* path, FileIterFlags flags);
+bool      file_iter_next    (FileIter* iter, FileInfo* info);
+void      file_iter_end     (FileIter* iter);
 
 #ifdef __cplusplus
 }
@@ -224,7 +243,7 @@ int64_t file_get_pos(File file)
     LARGE_INTEGER zero = {0};
     LARGE_INTEGER position;
 
-    if (!SetFilePointerEx((Handle)file.fd, zero, &position, FILE_CURRENT))
+    if (!SetFilePointerEx((HANDLE)file.fd, zero, &position, FILE_CURRENT))
         result = -1;
     else
         result =(int64_t)position.QuadPart;
@@ -238,39 +257,19 @@ int64_t file_get_pos(File file)
     return result;
 }
 
-int64_t file_get_pos(File file)
-{
-    int64_t result = 0;
-#ifdef _WIN32
-    LARGE_INTEGER zero = {0};
-    LARGE_INTEGER position;
-    if (SetFilePointerEx((Handle)file.fd, zero, &position, FILE_CURRENT))
-        result = -1;
-    else
-        result = (int64_t)position.QuadPart;
-#else
-    off_t pos = lseek(fd, 0, SEEK_CUR);
-    if (pos == (off_t)-1)
-        result = -1;
-    else
-        result = (int64_t)pos;
-#endif
-    return result;
-}
-
-bool file_set_pos(File file, int64_t pos)
+int file_set_pos(File file, int64_t pos)
 {
 #ifdef _WIN32
     LARGE_INTEGER offset;
-    offset.QuadPart = position;
-    if (!SetFilePointerEx(file, pos, NULL, FILE_BEGIN))
-        return false;
+    offset.QuadPart = pos;
+    if (!SetFilePointerEx((HANDLE)file.fd, offset, NULL, FILE_BEGIN))
+        return 0;
 #else
-    off_t result = lseek(fd, position, SEEK_SET);
+    off_t result = lseek((int)file.fd, pos, SEEK_SET);
     if (result == (off_t)-1)
-        return false;
+        return 0;
 #endif
-    return true;
+    return 1;
 }
 
 #endif // FILE_IMPLEMENTATION
