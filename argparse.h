@@ -21,12 +21,6 @@ extern "C" {
  *          INCLUDES
  ***************************************************************************/
 
-#include <assert.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "print.h"
-
 /***************************************************************************
  *          MACROS
  ***************************************************************************/
@@ -122,14 +116,12 @@ int    argparse_help_cb_no_exit   (ArgParser* parser, Arg* arg);
 
 #ifdef ARGPARSE_IMPLEMENTATION
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef PRINT_IMPLEMENTATION
-    #define PRINT_IMPLEMENTATION
-    #include "print.h"
-#endif
+#include "print.h"
 
 #define ARGPARSE_UNKNOWN_ARG -1
 
