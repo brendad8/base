@@ -25,15 +25,17 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "print.h"
+
 /***************************************************************************
  *          MACROS
  ***************************************************************************/
 
-#define ARG_BOOL(...)    { ARGPARSE_TYPE_BOOL, __VA_ARGS__ }
+#define ARG_FLAG(...)    { ARGPARSE_TYPE_FLAG, __VA_ARGS__ }
 #define ARG_INT(...)     { ARGPARSE_TYPE_INT, __VA_ARGS__ }
 #define ARG_FLOAT(...)   { ARGPARSE_TYPE_FLOAT, __VA_ARGS__ }
 #define ARG_STRING(...)  { ARGPARSE_TYPE_STRING, __VA_ARGS__ }
-#define ARG_HELP()       ARG_BOOL(NULL, 'h', "help", "show this help message and exit", argparse_help_cb, NULL)
+#define ARG_HELP()       ARG_FLAG(NULL, 'h', "help", "show this help message and exit", argparse_help_cb, NULL)
 #define ARG_END(...)     { ARGPARSE_TYPE_END, NULL, '\0', NULL, NULL, NULL, NULL }
 
 /***************************************************************************
@@ -51,7 +53,7 @@ typedef int ArgParseType;
 enum 
 {
     ARGPARSE_TYPE_END,
-    ARGPARSE_TYPE_BOOL,
+    ARGPARSE_TYPE_FLAG,
     ARGPARSE_TYPE_INT,
     ARGPARSE_TYPE_FLOAT,
     ARGPARSE_TYPE_STRING,
@@ -83,7 +85,6 @@ struct Arg
     void* cb_data;
     
     ArgFlags flags;
-
 };
 
 struct ArgParser
@@ -179,9 +180,9 @@ static int argparse_get_value(ArgParser* parser, Arg* arg, int flags)
     {
         switch (arg->arg_type) 
         {
-            case ARGPARSE_TYPE_BOOL:
+            case ARGPARSE_TYPE_FLAG:
             {
-                *(bool*)arg->arg_ptr = true;
+                *(int*)arg->arg_ptr = true;
                 arg->flags |= ARG_IS_SET;
                 break;
             }
