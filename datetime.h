@@ -40,7 +40,8 @@ typedef struct
     uint16_t hour;    // [0-23]
     uint16_t min;     // [0-59]
     uint16_t sec;     // [0-59]
-    uint16_t milli;   // [0-999]
+    uint16_t msec;    // [0-999]
+    uint16_t usec;    // [0-999]
 
 } DateTime;
 
@@ -67,7 +68,8 @@ DateTime    date_time_from_dense       (DenseTime);
 DateTime    date_time_now_utc          (void);
 DateTime    date_time_now_local        (void);
 DayOfWeek   date_time_day_of_week      (DateTime);
-DateTime    date_time_add_millis       (DateTime, int);
+DateTime    date_time_add_usec         (DateTime, int);
+DateTime    date_time_add_msec         (DateTime, int);
 DateTime    date_time_add_secs         (DateTime, int);
 DateTime    date_time_add_mins         (DateTime, int);
 DateTime    date_time_add_days         (DateTime, int);
@@ -78,7 +80,6 @@ int64_t     date_time_diff_ms          (DateTime, DateTime);
 
 bool        date_time_local_to_utc     (DateTime, DateTime*);
 bool        date_time_utc_to_local     (DateTime, DateTime*);
-
 
 DateTime    date_time_local_from_unix  (int64_t);
 int64_t     date_time_local_to_unix    (DateTime);
@@ -102,10 +103,12 @@ int64_t     date_time_utc_to_unix      (DateTime);
     #include <sys/time.h>
 #endif
 
-#define DT_DAY_TO_MS 86400000LL
-#define DT_HOUR_TO_MS 3600000LL
-#define DT_MIN_TO_MS 60000LL
-#define DT_SEC_TO_MS 1000LL
+#define DT_DAY_TO_US 86400000000LL
+#define DT_HOUR_TO_US 3600000000LL
+#define DT_MIN_TO_US 60000000LL
+#define DT_SEC_TO_US 1000000LL
+#define DT_MS_TO_US 1000LL
+
 #define DT_DAYS_PER_400_YEARS 146097LL
 
 static const DateTime dt_unix_epoch = {
@@ -114,7 +117,7 @@ static const DateTime dt_unix_epoch = {
     .day = 1
 };
 
-static const DenseTime dense_unix_epoch = 62135596800000;
+static const DenseTime dense_unix_epoch = 62135596800000000ULL;
 
 static const int64_t dt_days_in_year[2] = { 365, 366 };        // { non-leap, leap }
                                                               
@@ -153,11 +156,12 @@ DenseTime date_time_to_dense(DateTime dt)
     int64_t days = dt_days_before_year(dt.year);
     days += dt_days_before_month[dt_is_leap_year(dt.year)][dt.month - 1];
     days += dt.day - 1;
-    result += days * DT_DAY_TO_MS;
-    result += (int64_t)dt.hour * DT_HOUR_TO_MS;
-    result += (int64_t)dt.min * DT_MIN_TO_MS;
-    result += (int64_t)dt.sec * DT_SEC_TO_MS;
-    result += dt.milli;
+    result += days * DT_DAY_TO_US;
+    result += (int64_t)dt.hour * DT_HOUR_TO_US;
+    result += (int64_t)dt.min * DT_MIN_TO_US;
+    result += (int64_t)dt.sec * DT_SEC_TO_US;
+    result += dt.msec * DT_MS_TO_US;
+    result += dt.usec;
     return result;
 }
 
@@ -165,8 +169,8 @@ DenseTime date_time_to_dense(DateTime dt)
 DateTime date_time_from_dense(DenseTime dense)
 {
     DateTime result;
-    int64_t days = dense / DT_DAY_TO_MS; // days since 0001-01-01 00:00:00.000
-    int64_t ms_into_day = dense % DT_DAY_TO_MS;
+    int64_t days = dense / DT_DAY_TO_US; // days since 0001-01-01 00:00:00.000
+    int64_t usec_into_day = dense % DT_DAY_TO_US;
 
     uint16_t num_cycles = days / DT_DAYS_PER_400_YEARS;
     uint16_t days_into_cycle = days % DT_DAYS_PER_400_YEARS;
@@ -194,22 +198,26 @@ DateTime date_time_from_dense(DenseTime dense)
 
     uint16_t day = days_into_year - dt_days_before_month[is_leap_year][month-1] + 1;
 
-    uint16_t hour = (uint16_t)(ms_into_day / DT_HOUR_TO_MS);
-    int64_t ms_into_hour = ms_into_day % DT_HOUR_TO_MS;
+    uint16_t hour = (uint16_t)(usec_into_day / DT_HOUR_TO_US);
+    int64_t usec_into_hour = usec_into_day % DT_HOUR_TO_US;
 
-    uint16_t min = (uint16_t)(ms_into_hour / DT_MIN_TO_MS);
-    int64_t ms_into_min = ms_into_hour % DT_MIN_TO_MS;
+    uint16_t min = (uint16_t)(usec_into_hour / DT_MIN_TO_US);
+    int64_t ms_into_min = usec_into_hour % DT_MIN_TO_US;
 
-    uint16_t sec = (uint16_t)(ms_into_min / DT_SEC_TO_MS);
-    int64_t ms = (uint16_t)(ms_into_min % DT_SEC_TO_MS);
+    uint16_t sec = (uint16_t)(usec_into_min / DT_SEC_TO_US);
+    int64_t msec_into_sec = (uint16_t)(usec_into_min % DT_SEC_TO_US);
+    
+    uint16_t msec = (uint16_t)(usec_into_sec / DT_MS_TO_US);
+    int64_t usec = (uint16_t)(usec_into_sec % DT_MS_TO_US);
 
-    result.year = year;
-    result.month = month;
-    result.day = day;
-    result.hour = hour;
-    result.min = min;
-    result.sec = sec;
-    result.milli = ms;
+    result.year  = (uint16_t)year;
+    result.month = (uint16_t)month;
+    result.day   = (uint16_t)day;
+    result.hour  = (uint16_t)hour;
+    result.min   = (uint16_t)min;
+    result.sec   = (uint16_t)sec;
+    result.msec  = (uint16_t)msec;
+    result.usec  = (uint16_t)usec;
     return result;
 }
 
@@ -221,32 +229,32 @@ DateTime date_time_add_millis(DateTime dt, int millis)
 
 DateTime date_time_add_secs(DateTime dt, int secs)
 {
-    return date_time_add_millis(dt, secs * DT_SEC_TO_MS);
+    return date_time_add_millis(dt, secs * DT_SEC_TO_US);
 }
 
 DateTime date_time_add_mins(DateTime dt, int mins)
 {
-    return date_time_add_millis(dt, mins * DT_MIN_TO_MS);
+    return date_time_add_millis(dt, mins * DT_MIN_TO_US);
 }
 
 DateTime date_time_add_hours(DateTime dt, int hours)
 {
-    return date_time_add_millis(dt, hours * DT_HOUR_TO_MS);
+    return date_time_add_millis(dt, hours * DT_HOUR_TO_US);
 }
 
 DateTime date_time_add_days(DateTime dt, int days)
 {
-    return date_time_add_millis(dt, days * DT_DAY_TO_MS);
+    return date_time_add_millis(dt, days * DT_DAY_TO_US);
 }
 
 DayOfWeek date_time_day_of_week(DateTime dt)
 {
     DenseTime dense = date_time_to_dense(dt);
-    int64_t days = dense / DT_DAY_TO_MS;
+    int64_t days = dense / DT_DAY_TO_US;
     return ((days + 1) % 7);
 }
 
-int64_t date_time_diff_ms(DateTime a, DateTime b)
+int64_t date_time_diff_usec(DateTime a, DateTime b)
 {
     return (int64_t)(date_time_to_dense(a) - date_time_to_dense(b));
 }
@@ -263,7 +271,7 @@ bool date_time_equal(DateTime a, DateTime b)
     return date_time_compare(a, b) == 0;
 }
 
-bool date_time_equal_date(DateTime a, DateTime b)
+bool date_time_equal_date(DateTime a, DateTime)
 {
     return a.year == b.year && a.month == b.month && a.day == b.day;
 }
@@ -281,12 +289,12 @@ DateTime date_time_now_utc(void)
             .hour  = st.wHour,
             .min   = st.wMinute,
             .sec   = st.wSecond,
-            .milli = st.wMilliseconds
+            .msec = st.wMilliseconds
         };
     #else
         struct timeval tv;
         gettimeofday(&tv, 0);
-        DenseTime now = dense_unix_epoch + (tv.tv_sec * DT_SEC_TO_MS) + (tv.tv_usec / 1000);
+        DenseTime now = dense_unix_epoch + (tv.tv_sec * DT_SEC_TO_US) + tv.tv_usec;
         return datetime_from_dense_time(now);
     #endif
 }
@@ -303,7 +311,7 @@ DateTime date_time_now_local(void)
             .hour  = st.wHour,
             .min   = st.wMinute,
             .sec   = st.wSecond,
-            .milli = st.wMilliseconds
+            .msec = st.wMilliseconds
         };
     #else
         struct timeval tv;
@@ -318,7 +326,8 @@ DateTime date_time_now_local(void)
             .hour  = tm_local.tm_hour,
             .min   = tm_local.tm_min,
             .sec   = tm_local.tm_sec,
-            .milli = tv.tv_usec / 1000
+            .msec = tv.tv_usec / 1000
+            .usec = tv.tv_usec % 1000
         };
     #endif
 }
@@ -335,7 +344,7 @@ bool date_time_local_to_utc(DateTime local, DateTime* utc)
         .wHour         = local.hour,
         .wMinute       = local.min,
         .wSecond       = local.sec,
-        .wMilliseconds = local.milli
+        .wMilliseconds = local.msec
     };
 
     DWORD id = GetDynamicTimeZoneInformation(&tz);
@@ -388,7 +397,7 @@ bool date_time_local_to_utc(DateTime local, DateTime* utc)
 #endif
 }
 
-bool date_time_utc_to_local(DateTime utc, DateTime* local)
+bool date_time_utc_to_local(DateTime utc, DateTime* local);
 {
 #ifdef _WIN32
     SYSTEMTIME st_local;
