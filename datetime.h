@@ -25,8 +25,8 @@ extern "C" {
  *          DEFINES
  ***************************************************************************/
 
-#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%d"
-#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.milli
+#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.(%d:%d)"
+#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.msec, dt.usec
 
 /***************************************************************************
  *          TYPES
@@ -45,7 +45,7 @@ typedef struct
 
 } DateTime;
 
-typedef int64_t DenseTime; // milli seconds since 0001-01-01 00:00:00.000
+typedef int64_t DenseTime; // micro seconds since 0001-01-01 00:00:00.000
 
 typedef int DayOfWeek;
 enum
@@ -118,6 +118,14 @@ static const DateTime dt_unix_epoch = {
 };
 
 static const DenseTime dense_unix_epoch = 62135596800000000ULL;
+
+static const DateTime dt_win_epoch = {
+    .year = 1601,
+    .month = 1,
+    .day = 1
+};
+
+static const DenseTime dense_win_epoch = 50491123200000000ULL;
 
 static const int64_t dt_days_in_year[2] = { 365, 366 };        // { non-leap, leap }
                                                               
@@ -202,10 +210,10 @@ DateTime date_time_from_dense(DenseTime dense)
     int64_t usec_into_hour = usec_into_day % DT_HOUR_TO_US;
 
     uint16_t min = (uint16_t)(usec_into_hour / DT_MIN_TO_US);
-    int64_t ms_into_min = usec_into_hour % DT_MIN_TO_US;
+    int64_t usec_into_min = usec_into_hour % DT_MIN_TO_US;
 
     uint16_t sec = (uint16_t)(usec_into_min / DT_SEC_TO_US);
-    int64_t msec_into_sec = (uint16_t)(usec_into_min % DT_SEC_TO_US);
+    int64_t usec_into_sec = (uint16_t)(usec_into_min % DT_SEC_TO_US);
     
     uint16_t msec = (uint16_t)(usec_into_sec / DT_MS_TO_US);
     int64_t usec = (uint16_t)(usec_into_sec % DT_MS_TO_US);
@@ -271,7 +279,7 @@ bool date_time_equal(DateTime a, DateTime b)
     return date_time_compare(a, b) == 0;
 }
 
-bool date_time_equal_date(DateTime a, DateTime)
+bool date_time_equal_date(DateTime a, DateTime b)
 {
     return a.year == b.year && a.month == b.month && a.day == b.day;
 }
@@ -279,40 +287,27 @@ bool date_time_equal_date(DateTime a, DateTime)
 DateTime date_time_now_utc(void)
 {
     #ifdef _WIN32
-        SYSTEMTIME st;
-        GetSystemTime(&st);
+        FILETIME ft;
+        GetSystemTimeAsFileTime(&ft);
+        DenseTime dense = dense_win_epoch + ((((int64_t)ft.dwHighDateTime << 32) | (int64_t)ft.dwLowDateTime) / 10);
+        return date_time_from_dense(dense);
 
-        return (DateTime) {
-            .year  = st.wYear,
-            .month = st.wMonth,
-            .day   = st.wDay,
-            .hour  = st.wHour,
-            .min   = st.wMinute,
-            .sec   = st.wSecond,
-            .msec = st.wMilliseconds
-        };
     #else
         struct timeval tv;
         gettimeofday(&tv, 0);
         DenseTime now = dense_unix_epoch + (tv.tv_sec * DT_SEC_TO_US) + tv.tv_usec;
-        return datetime_from_dense_time(now);
+        return date_time_from_dense(now);
     #endif
 }
 
 DateTime date_time_now_local(void)
 {
     #ifdef _WIN32
-        SYSTEMTIME st;
-        GetLocalTime(&st);
-        return (DateTime) {
-            .year  = st.wYear,
-            .month = st.wMonth,
-            .day   = st.wDay,
-            .hour  = st.wHour,
-            .min   = st.wMinute,
-            .sec   = st.wSecond,
-            .msec = st.wMilliseconds
-        };
+        FILETIME ft_utc, ft_local;
+        GetSystemTimeAsFileTime(&ft_utc);
+        FileTimeToLocalFileTime(&ft_utc, &ft_local);
+        DenseTime dense = dense_win_epoch + ((((int64_t)ft_local.dwHighDateTime << 32) | (int64_t)ft_local.dwLowDateTime) / 10);
+        return date_time_from_dense(dense);
     #else
         struct timeval tv;
         gettimeofday(&tv, 0);
@@ -326,8 +321,8 @@ DateTime date_time_now_local(void)
             .hour  = tm_local.tm_hour,
             .min   = tm_local.tm_min,
             .sec   = tm_local.tm_sec,
-            .msec = tv.tv_usec / 1000
-            .usec = tv.tv_usec % 1000
+            .msec  = tv.tv_usec / 1000
+            .usec  = tv.tv_usec % 1000
         };
     #endif
 }
@@ -361,7 +356,8 @@ bool date_time_local_to_utc(DateTime local, DateTime* utc)
         utc->hour  = st_utc.wHour;
         utc->min   = st_utc.wMinute;
         utc->sec   = st_utc.wSecond;
-        utc->milli = st_utc.wMilliseconds;
+        utc->msec  = st_utc.wMilliseconds;
+        utc->usec  = local.usec;
     }
     return res;
 #else
@@ -391,13 +387,14 @@ bool date_time_local_to_utc(DateTime local, DateTime* utc)
     utc->hour  = tm_utc.tm_hour;
     utc->min   = tm_utc.tm_min;
     utc->sec   = tm_utc.tm_sec;
-    utc->milli = local.milli;
+    utc->msec  = local.msec;
+    utc->usec  = local.usec;
 
     return true;
 #endif
 }
 
-bool date_time_utc_to_local(DateTime utc, DateTime* local);
+bool date_time_utc_to_local(DateTime utc, DateTime* local)
 {
 #ifdef _WIN32
     SYSTEMTIME st_local;
@@ -409,7 +406,7 @@ bool date_time_utc_to_local(DateTime utc, DateTime* local);
         .wHour         = utc.hour,
         .wMinute       = utc.min,
         .wSecond       = utc.sec,
-        .wMilliseconds = utc.milli
+        .wMilliseconds = utc.msec
     };
 
     DWORD id = GetDynamicTimeZoneInformation(&tz);
@@ -426,7 +423,8 @@ bool date_time_utc_to_local(DateTime utc, DateTime* local);
         local->hour  = st_local.wHour;
         local->min   = st_local.wMinute;
         local->sec   = st_local.wSecond;
-        local->milli = st_local.wMilliseconds;
+        local->msec  = st_local.wMilliseconds;
+        local->usec  = utc.usec;
     }
     return res;
 #else
@@ -456,7 +454,8 @@ bool date_time_utc_to_local(DateTime utc, DateTime* local);
     local->hour  = tm_local.tm_hour;
     local->min   = tm_local.tm_min;
     local->sec   = tm_local.tm_sec;
-    local->milli = utc.milli;
+    local->msec  = utc.msec;
+    local->usec  = utc.usec;
 
     return true;
 #endif
