@@ -29,8 +29,8 @@ extern "C" {
 #define ARG_INT(...)     { ARGPARSE_TYPE_INT, __VA_ARGS__ }
 #define ARG_FLOAT(...)   { ARGPARSE_TYPE_FLOAT, __VA_ARGS__ }
 #define ARG_STRING(...)  { ARGPARSE_TYPE_STRING, __VA_ARGS__ }
-#define ARG_HELP()       ARG_FLAG(NULL, 'h', "help", "show this help message and exit", argparse_help_cb, NULL)
-#define ARG_END(...)     { ARGPARSE_TYPE_END, NULL, '\0', NULL, NULL, NULL, NULL }
+#define ARG_HELP()       ARG_FLAG(NULL, 'h', "help", "show this help message and exit", argparse_help_cb, NULL, 0)
+#define ARG_END(...)     { ARGPARSE_TYPE_END, NULL, '\0', NULL, NULL, NULL, NULL, 0 }
 
 /***************************************************************************
  *          TYPES
@@ -121,6 +121,9 @@ int    argparse_help_cb_no_exit   (ArgParser* parser, Arg* arg);
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef PRINT_IMPLEMENTATION
+    #undef PRINT_IMPLEMENTATION
+#endif
 #include "print.h"
 
 #define ARGPARSE_UNKNOWN_ARG -1
