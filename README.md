@@ -17,11 +17,3 @@ Base C Library:
 
     print.h    - basic print functions
 
-
-Dependency Chain:
-
-stb_sprintf.h -> print.h -> argparse.h
-             \
-              -> file.h  
-
-
