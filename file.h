@@ -18,6 +18,7 @@ extern "C" {
  ***************************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /***************************************************************************
  *          TYPES
@@ -74,9 +75,9 @@ int64_t   file_get_size     (File file);
 int64_t   file_get_pos      (File file);
 int       file_set_pos      (File file, int64_t pos);
 
-bool      file_iter_start   (FileIter* iter, char* path, FileIterFlags flags);
-bool      file_iter_next    (FileIter* iter, FileInfo* info);
-void      file_iter_end     (FileIter* iter);
+// bool      file_iter_start   (FileIter* iter, char* path, FileIterFlags flags);
+// bool      file_iter_next    (FileIter* iter, FileInfo* info);
+// void      file_iter_end     (FileIter* iter);
 
 #ifdef __cplusplus
 }
