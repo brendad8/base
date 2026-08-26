@@ -25,8 +25,11 @@ extern "C" {
  *          DEFINES
  ***************************************************************************/
 
-#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.(%d:%d)"
-#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.msec, dt.usec
+#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%.6lf"
+#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, ((double)(1000*dt.msec + dt.usec))/1000000.0
+
+#define DATETIME_DEBUG_FMT "DateTime{\n  year = %d,\n  month = %02d,\n  day = %02d,\n  hour = %02d,\n  min = %02d,\n  sec = %02d,\n  msec = %d,\n  usec = %d\n}"
+#define DATETIME_DEBUG_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.msec, dt.usec
 
 /***************************************************************************
  *          TYPES
@@ -321,7 +324,7 @@ DateTime date_time_now_local(void)
             .hour  = tm_local.tm_hour,
             .min   = tm_local.tm_min,
             .sec   = tm_local.tm_sec,
-            .msec  = tv.tv_usec / 1000
+            .msec  = tv.tv_usec / 1000,
             .usec  = tv.tv_usec % 1000
         };
     #endif
@@ -445,7 +448,7 @@ bool date_time_utc_to_local(DateTime utc, DateTime* local)
 
     struct tm tm_local;
 
-    if (localtime_r(&t, &tm_local) == nullptr)
+    if (localtime_r(&t, &tm_local) == NULL)
         return false;
 
     local->year  = tm_local.tm_year + 1900;
