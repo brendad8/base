@@ -18,18 +18,17 @@ extern "C" {
  ***************************************************************************/
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdbool.h>
 
 /***************************************************************************
  *          DEFINES
  ***************************************************************************/
 
-#define DATETIME_FMT "%d-%02d-%02d %02d:%02d:%02d.%.6lf"
-#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, ((double)(1000*dt.msec + dt.usec))/1000000.0
+#define DATETIME_DEC_FMT "%d-%02d-%02d %02d:%02d:%02d.%06d"
+#define DATETIME_DEC_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, ((1000*dt.msec + dt.usec))
 
-#define DATETIME_DEBUG_FMT "DateTime{\n  year = %d,\n  month = %02d,\n  day = %02d,\n  hour = %02d,\n  min = %02d,\n  sec = %02d,\n  msec = %d,\n  usec = %d\n}"
-#define DATETIME_DEBUG_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.msec, dt.usec
+#define DATETIME_FMT "DateTime {\n  year = %d,\n  month = %02d,\n  day = %02d,\n  hour = %02d,\n  min = %02d,\n  sec = %02d,\n  msec = %d,\n  usec = %d\n}"
+#define DATETIME_VARG(dt) dt.year, dt.month, dt.day, dt.hour, dt.min, dt.sec, dt.msec, dt.usec
 
 /***************************************************************************
  *          TYPES
