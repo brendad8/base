@@ -131,6 +131,44 @@ int    argparse_help_cb_no_exit   (ArgParser* parser, Arg* arg);
 #define ARGPARSE_LONG_NAME  1 << 0
 #define ARGPARSE_POSITIONAL 1 << 1
 
+#ifdef ARGPARSE_NO_COLOR
+    #define ANSI_RESET          ""
+    #define ANSI_BLACK          ""
+    #define ANSI_RED            ""
+    #define ANSI_GREEN          ""
+    #define ANSI_YELLOW         ""
+    #define ANSI_BLUE           ""
+    #define ANSI_MAGENTA        ""
+    #define ANSI_CYAN           ""
+    #define ANSI_WHITE          ""
+    #define ANSI_BRIGHT_BLACK   ""
+    #define ANSI_BRIGHT_RED     ""
+    #define ANSI_BRIGHT_GREEN   ""
+    #define ANSI_BRIGHT_YELLOW  ""
+    #define ANSI_BRIGHT_BLUE    ""
+    #define ANSI_BRIGHT_MAGENTA ""
+    #define ANSI_BRIGHT_CYAN    ""
+    #define ANSI_BRIGHT_WHITE   ""
+#else
+    #define ANSI_RESET          "\x1b[0m"
+    #define ANSI_BLACK          "\x1b[30m"
+    #define ANSI_RED            "\x1b[31m"
+    #define ANSI_GREEN          "\x1b[32m"
+    #define ANSI_YELLOW         "\x1b[33m"
+    #define ANSI_BLUE           "\x1b[34m"
+    #define ANSI_MAGENTA        "\x1b[35m"
+    #define ANSI_CYAN           "\x1b[36m"
+    #define ANSI_WHITE          "\x1b[37m"
+    #define ANSI_BRIGHT_BLACK   "\x1b[90m"
+    #define ANSI_BRIGHT_RED     "\x1b[91m"
+    #define ANSI_BRIGHT_GREEN   "\x1b[92m"
+    #define ANSI_BRIGHT_YELLOW  "\x1b[93m"
+    #define ANSI_BRIGHT_BLUE    "\x1b[94m"
+    #define ANSI_BRIGHT_MAGENTA "\x1b[95m"
+    #define ANSI_BRIGHT_CYAN    "\x1b[96m"
+    #define ANSI_BRIGHT_WHITE   "\x1b[97m"
+#endif
+
 void argparse_init(ArgParser* parser, Arg* args, char* prog_name, char* usage, int flags)
 {
     memset(parser, 0, sizeof(ArgParser));
@@ -158,11 +196,11 @@ void argparse_init(ArgParser* parser, Arg* args, char* prog_name, char* usage, i
 static void argparse_error(Arg* arg, char* reason, int flags)
 {
     if (flags & ARGPARSE_LONG_NAME) 
-        eprint("error: option `--%s` %s\n", arg->long_name, reason);
+        eprintln(ANSI_RED "error: option `--%s` %s" ANSI_RESET, arg->long_name, reason);
     else if (flags & ARGPARSE_POSITIONAL)
-        eprint("error: option `--%s` %s\n", arg->help, reason);
+        eprintln(ANSI_RED "error: option `--%s` %s" ANSI_RESET, arg->help, reason);
     else 
-        eprint("error: option `-%c` %s\n", arg->short_name, reason);
+        eprintln(ANSI_RED "error: option `-%c` %s" ANSI_RESET, arg->short_name, reason);
 
     exit(EXIT_FAILURE);
 }
@@ -357,7 +395,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
                 status = argparse_parse_long(parser, arg_str + 2);
                 if (status == ARGPARSE_UNKNOWN_ARG && parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
                 {
-                    eprint("error: unknown option `%s`\n", arg_str);
+                    eprint(ANSI_RED "error: unknown option `%s`\n" ANSI_RESET, arg_str);
                     exit(EXIT_FAILURE);
                 }
             }
@@ -370,7 +408,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
                     status = argparse_parse_short(parser, *short_name);
                     if (status == ARGPARSE_UNKNOWN_ARG && parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
                     {
-                        eprint("error: unknown option `%c`\n", *short_name);
+                        eprintln(ANSI_RED "error: unknown option `%c`" ANSI_RESET, *short_name);
                         exit(EXIT_FAILURE);
                     }
                     short_name++;
@@ -384,7 +422,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
             
             if (parser->flags & ARGPARSE_STOP_AT_UNKNOWN)
             {
-                eprint("error: unknown option `%s`\n", arg_str);
+                eprintln(ANSI_RED "error: unknown option `%s`" ANSI_RESET, arg_str);
                 exit(EXIT_FAILURE);
             }
         }
@@ -404,7 +442,7 @@ void argparse_parse(ArgParser* parser, int argc, char* argv[])
     }
     if (missing_arg_count)
     {
-        eprint("error: the following arguments are required:");
+        eprint(ANSI_RED "error: the following arguments are required:" ANSI_RESET);
         int missing_arg_idx = 0;
         for (arg = parser->args; arg->arg_type != ARGPARSE_TYPE_END; arg++) 
         {
@@ -543,5 +581,38 @@ int argparse_help_cb(ArgParser* parser, Arg* arg)
     argparse_help_cb_no_exit(parser, arg);
     exit(EXIT_SUCCESS);
 }
+
+// int argparse_console_supports_color(void)
+// {
+// #ifdef _WIN32
+//     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+//
+//     if (h == INVALID_HANDLE_VALUE)
+//         return 0;
+//
+//     DWORD mode;
+//     if (!GetConsoleMode(h, &mode))
+//         return 0;  // Not a console, e.g. redirected output
+//
+//     if (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+//         return 1;
+//
+//     // Try enabling VT processing.
+//     if (SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING))
+//         return 1;
+//
+//     return 0;
+// #else
+//     if (!isatty(STDOUT_FILENO))
+//         return 0;
+//
+//     const char *term = getenv("TERM");
+//
+//     if (!term || strcmp(term, "dumb") == 0)
+//         return 0;
+//
+//     return 1;
+// #endif
+// }
 
 #endif // ARGPARSE_IMPLEMENTATION
