@@ -83,8 +83,6 @@ int       file_set_pos      (File file, int64_t pos);
 }
 #endif
 
-#endif // FILE_H
-
 /***************************************************************************
  *          IMPLEMENTATION
  ***************************************************************************/
@@ -275,3 +273,4 @@ int file_set_pos(File file, int64_t pos)
 
 #endif // FILE_IMPLEMENTATION
 
+#endif // FILE_H

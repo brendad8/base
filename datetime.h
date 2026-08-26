@@ -81,8 +81,8 @@ bool        date_time_equal_date       (DateTime, DateTime);
 int64_t     date_time_diff_ms          (DateTime, DateTime);
 bool        date_time_local_to_utc     (DateTime, DateTime*);
 bool        date_time_utc_to_local     (DateTime, DateTime*);
-DateTime    date_time_from_unix        (int64_t);
-DenseTime   dense_time_from_unix       (int64_t);
+DateTime    date_time_from_unix        (int64_t); // unix time is microseconds since Jan 1st 1970 00:00:00.000000
+DenseTime   dense_time_from_unix       (int64_t); // unix time is microseconds since Jan 1st 1970 00:00:00.000000
 
 // int64_t     date_time_local_to_unix    (DateTime);
 // int64_t     date_time_utc_to_unix      (DateTime);
@@ -473,6 +473,13 @@ DateTime date_time_from_unix(int64_t unix_time_msec)
     return date_time_from_dense(dense);
 }
 
+#undef DT_DAY_TO_USEC 
+#undef DT_HOUR_TO_USEC
+#undef DT_MIN_TO_USEC 
+#undef DT_SEC_TO_USEC 
+#undef DT_MSEC_TO_USEC
+
+#define DT_DAYS_PER_400_YEARS 146097LL
 #endif // DATETIME_IMPLEMENTATION
 
 #endif // DATETIME_H

@@ -21,8 +21,7 @@ extern "C" {
  ***************************************************************************/
 
 #include <stdarg.h>
-
-#include "file.h"
+#include "file.h" // for File struct
 
 /***************************************************************************
  *          MACROS
@@ -54,8 +53,6 @@ int   vbnprint   (char* buf, int n, const char* fmt, va_list);
 #ifdef __cplusplus
 }
 #endif
-
-#endif // PRINT_H
 
 /***************************************************************************
  *          IMPLEMENTATION
@@ -102,9 +99,9 @@ File print_get_stderr(void)
 
 static int print_write_file(File file, const char* buf, int len)
 {
-    int result;
+    int result = 0;
 #ifdef _WIN32
-    WriteFile((HANDLE)file.fd, (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
+    result = WriteFile((HANDLE)file.fd, (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
 #else
     result = (int)write((int)file.fd, buf, (size_t)len);
 #endif
@@ -123,42 +120,6 @@ int vfprint(File file, const char* fmt, va_list ap)
     char buffer[STB_SPRINTF_MIN];
     return stbsp_vsprintfcb(print_cb, &file, buffer, fmt, ap);
 }
-
-// int vprint(const char *fmt, va_list ap)
-// {
-//     char buffer[STB_SPRINTF_MIN];
-//     return stbsp_vsprintfcb(print_cb, NULL, buffer, fmt, ap);
-// }
-//
-// int vprintln(const char *fmt, va_list ap)
-// {
-//     char buffer[STB_SPRINTF_MIN];
-//     int result = stbsp_vsprintfcb(print_cb, NULL, buffer, fmt, ap);
-//
-//     char* newline = NEWLINE;
-//     int newline_len = NEWLINE_LEN;
-//     result += print_write_file(newline, newline_len);
-//
-//     return result;
-// }
-//
-// int veprint(const char *fmt, va_list ap)
-// {
-//     char buffer[STB_SPRINTF_MIN];
-//     return stbsp_vsprintfcb(print_stderr_cb, NULL, buffer, fmt, ap);
-// }
-//
-// int veprintln(const char *fmt, va_list ap)
-// {
-//     char buffer[STB_SPRINTF_MIN];
-//     int result = stbsp_vsprintfcb(print_stderr_cb, NULL, buffer, fmt, ap);
-//
-//     char* newline = NEWLINE;
-//     int newline_len = NEWLINE_LEN;
-//     result += print_write_stderr(newline, newline_len);
-//
-//     return result;
-// }
 
 int fprint(File file, const char* fmt, ...)
 {
@@ -241,3 +202,4 @@ int bnprint(char* buf, int n, const char* fmt, ...)
 
 #endif // PRINT_IMPLEMENTATION
       
+#endif // PRINT_H

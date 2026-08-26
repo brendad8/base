@@ -18,10 +18,6 @@ extern "C" {
 #endif
 
 /***************************************************************************
- *          INCLUDES
- ***************************************************************************/
-
-/***************************************************************************
  *          MACROS
  ***************************************************************************/
 
@@ -108,8 +104,6 @@ int    argparse_help_cb_no_exit   (ArgParser* parser, Arg* arg);
 }
 #endif
 
-#endif // ARGPARSE_H
-
 /***************************************************************************
  *          IMPLEMENTATION
  ***************************************************************************/
@@ -121,10 +115,11 @@ int    argparse_help_cb_no_exit   (ArgParser* parser, Arg* arg);
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef PRINT_IMPLEMENTATION
-    #undef PRINT_IMPLEMENTATION
-#endif
-#include "print.h"
+// TODO(bcall): remove print dependency...
+// #ifdef PRINT_IMPLEMENTATION
+//     #undef PRINT_IMPLEMENTATION
+// #endif
+// #include "print.h"
 
 #define ARGPARSE_UNKNOWN_ARG -1
 
@@ -195,12 +190,17 @@ void argparse_init(ArgParser* parser, Arg* args, char* prog_name, char* usage, i
 
 static void argparse_error(Arg* arg, char* reason, int flags)
 {
+    // unsigned long long std_err = argparse_get_stderr();
+    // argparse_write_cstr(std_err, "error: option `");
     if (flags & ARGPARSE_LONG_NAME) 
-        eprintln(ANSI_RED "error: option `--%s` %s" ANSI_RESET, arg->long_name, reason);
+        eprintln("error: option `--%s` %s", arg->long_name, reason);
     else if (flags & ARGPARSE_POSITIONAL)
-        eprintln(ANSI_RED "error: option `--%s` %s" ANSI_RESET, arg->help, reason);
+        eprintln("error: option `--%s` %s", arg->help, reason);
     else 
-        eprintln(ANSI_RED "error: option `-%c` %s" ANSI_RESET, arg->short_name, reason);
+        eprintln("error: option `-%c` %s", arg->short_name, reason);
+    // argparse_write_cstr(std_err, "` ");
+    // argparse_write_cstr(std_err, reason);
+    // argparse_write_cstr(std_err, "\n");
 
     exit(EXIT_FAILURE);
 }
@@ -582,6 +582,53 @@ int argparse_help_cb(ArgParser* parser, Arg* arg)
     exit(EXIT_SUCCESS);
 }
 
+int argparse_strlen(char* str)
+{
+    int len = 0;
+    char* p = str;
+    for (; p != '\0'; p++, len++);
+    return len;
+}
+
+unsigned long long argparse_get_stdout(void)
+{
+    unsigned long long result = 0;
+#ifdef _WIN32
+    result.fd = (unsigned long long)GetStdHandle(STD_OUTPUT_HANDLE);
+#else
+    result.fd = (unsigned long long)STDOUT_FILENO;
+#endif
+    return result;
+}
+
+unsigned long long argparse_get_stderr(void)
+{
+    unsigned long long result = 0;
+#ifdef _WIN32
+    result = (unsigned long long)GetStdHandle(STD_ERROR_HANDLE);
+#else
+    result = (unsigned long long)STDERR_FILENO;
+#endif
+    return result;
+}
+
+static int argparse_write_file(unsigned long long fd, const char* buf, int len)
+{
+    int result = 0;
+#ifdef _WIN32
+    result = WriteFile((HANDLE)fd, (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
+#else
+    result = (int)write((int)fd, buf, (size_t)len);
+#endif
+    return result;
+}
+
+static int argparse_write_cstr(unsigned long long fd, const char* str)
+{
+    int len = argparse_strlen(str);
+    return argparse_write_file(fd, str, len);
+}
+
 // int argparse_console_supports_color(void)
 // {
 // #ifdef _WIN32
@@ -616,3 +663,5 @@ int argparse_help_cb(ArgParser* parser, Arg* arg)
 // }
 
 #endif // ARGPARSE_IMPLEMENTATION
+
+#endif // ARGPARSE_H
