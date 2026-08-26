@@ -80,14 +80,13 @@ int         date_time_compare          (DateTime, DateTime);
 bool        date_time_equal            (DateTime, DateTime);
 bool        date_time_equal_date       (DateTime, DateTime);
 int64_t     date_time_diff_ms          (DateTime, DateTime);
-
 bool        date_time_local_to_utc     (DateTime, DateTime*);
 bool        date_time_utc_to_local     (DateTime, DateTime*);
+DateTime    date_time_from_unix        (int64_t);
+DenseTime   dense_time_from_unix       (int64_t);
 
-DateTime    date_time_local_from_unix  (int64_t);
-int64_t     date_time_local_to_unix    (DateTime);
-DateTime    date_time_utc_from_unix    (int64_t);
-int64_t     date_time_utc_to_unix      (DateTime);
+// int64_t     date_time_local_to_unix    (DateTime);
+// int64_t     date_time_utc_to_unix      (DateTime);
 
 #ifdef __cplusplus
 }
@@ -106,10 +105,10 @@ int64_t     date_time_utc_to_unix      (DateTime);
     #include <sys/time.h>
 #endif
 
-#define DT_DAY_TO_USEC 86400000000LL
+#define DT_DAY_TO_USEC  86400000000LL
 #define DT_HOUR_TO_USEC 3600000000LL
-#define DT_MIN_TO_USEC 60000000LL
-#define DT_SEC_TO_USEC 1000000LL
+#define DT_MIN_TO_USEC  60000000LL
+#define DT_SEC_TO_USEC  1000000LL
 #define DT_MSEC_TO_USEC 1000LL
 
 #define DT_DAYS_PER_400_YEARS 146097LL
@@ -463,7 +462,18 @@ bool date_time_utc_to_local(DateTime utc, DateTime* local)
 #endif
 }
 
+DenseTime dense_time_from_unix(int64_t unix_time_msec)
+{
+    DenseTime dense = dense_unix_epoch + (DT_MSEC_TO_USEC * unix_time_msec);
+    return dense;
+}
+
+DateTime date_time_from_unix(int64_t unix_time_msec)
+{
+    DenseTime dense = dense_time_from_unix(unix_time_msec);
+    return date_time_from_dense(dense);
+}
+
 #endif // DATETIME_IMPLEMENTATION
 
 #endif // DATETIME_H
-
