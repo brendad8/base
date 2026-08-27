@@ -44,7 +44,7 @@ int   bprint     (char* buf, const char* fmt, ...);
 int   bnprint    (char* buf, int n, const char* fmt, ...);
 
 int   vfprint    (File file, const char* fmt, va_list);
-int   vbprint    (char* buf, int n, const char* fmt, va_list);
+int   vbprint    (char* buf, const char* fmt, va_list);
 int   vbnprint   (char* buf, int n, const char* fmt, va_list);
 
 #ifdef __cplusplus
