@@ -78,7 +78,7 @@ DateTime    date_time_add_days         (DateTime, int);
 int         date_time_compare          (DateTime, DateTime);
 bool        date_time_equal            (DateTime, DateTime);
 bool        date_time_equal_date       (DateTime, DateTime);
-int64_t     date_time_diff_ms          (DateTime, DateTime);
+int64_t     date_time_diff             (DateTime, DateTime);
 bool        date_time_local_to_utc     (DateTime, DateTime*);
 bool        date_time_utc_to_local     (DateTime, DateTime*);
 DateTime    date_time_from_unix        (int64_t); // unix time is microseconds since Jan 1st 1970 00:00:00.000000
@@ -262,7 +262,7 @@ DayOfWeek date_time_day_of_week(DateTime dt)
     return ((days + 1) % 7);
 }
 
-int64_t date_time_diff_usec(DateTime a, DateTime b)
+int64_t date_time_diff(DateTime a, DateTime b)
 {
     return (int64_t)(date_time_to_dense(a) - date_time_to_dense(b));
 }
