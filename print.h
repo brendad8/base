@@ -42,11 +42,13 @@ int   eprintln   (const char* fmt, ...);
 int   fprint     (File file, const char* fmt, ...);
 int   fprintln   (File file, const char* fmt, ...);
 
+int   bprint     (char* buf, const char* fmt, ...);
 int   bnprint    (char* buf, int n, const char* fmt, ...);
 
 int   vfprint    (File file, const char* fmt, va_list);
 int   vfprintln  (File file, const char* fmt, va_list);
 
+int   vbprint    (char* buf, const char* fmt, va_list);
 int   vbnprint   (char* buf, int n, const char* fmt, va_list);
 
 
@@ -179,6 +181,20 @@ int eprintln(const char* fmt, ...)
     int ret = vfprint(err, fmt, ap);
     va_end(ap);
     ret += print_write_file(err, NEWLINE, NEWLINE_LEN);
+    return ret;
+}
+
+int vbprint(char* buf, const char *fmt, va_list ap)
+{
+    return stbsp_vsprintf(buf, fmt, ap);
+}
+
+int bnprint(char* buf, const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = vbprint(buf, fmt, ap);
+    va_end(ap);
     return ret;
 }
 

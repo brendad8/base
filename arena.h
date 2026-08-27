@@ -23,6 +23,7 @@ extern "C" {
  *          INCLUDES
  ***************************************************************************/
 
+#include <assert.h>
 #include <stdint.h>
 
 /***************************************************************************
@@ -55,7 +56,6 @@ struct Arena
     uint64_t pos;
     uint64_t committed;
     uint64_t reserved;
-    uint64_t commit_size;
     ArenaFlags flags;
 };
 
@@ -404,7 +404,6 @@ void vm_release(void* ptr, uint64_t size)
 #ifdef ARENA_UNIT_TESTS
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 static bool is_aligned(void* ptr, uint64_t align)
@@ -438,11 +437,10 @@ void arena_unit_tests(void)
     assert(ptr != NULL);
     assert(arena->committed == KB(8));
     arena_release(arena);
-    
 
     arena = arena_alloc((ArenaParams){0});
     uint64_t aligns[] = {1,2,4,8,16,32,64};
-    for(uint64_t i = 0; i < ARRAY_COUNT(aligns); i++)
+    for(uint64_t i = 0; i < sizeof(aligns)/sizeof(aligns[0]); i++)
     {
         uint64_t align = aligns[i];
         void* ptr = arena_push_align(arena, 13, align);
@@ -525,7 +523,7 @@ void arena_unit_tests(void)
 
 
     arena = arena_alloc((ArenaParams){0});
-    TestStruct* s = ARENA_PUSH_STRUCT(arena, TestStruct);
+    TestStruct* s = arena_push_struct(arena, TestStruct);
     assert(s != 0);
     arena_release(arena);
 
