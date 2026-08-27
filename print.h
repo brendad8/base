@@ -27,30 +27,25 @@ extern "C" {
  *          MACROS
  ***************************************************************************/
 
-#define prints(str) print("%s\n", str)
+#define prints(str)              print("%s\n", str)
+#define println(fmt, ...)        print(fmt "\n", __VA_ARGS__)
+#define eprintln(fmt, ...)       eprint(fmt "\n", __VA_ARGS__)
+#define fprintln(file, fmt, ...) fprint(file, fmt "\n", __VA_ARGS__)
 
 /***************************************************************************
  *          PROTOTYPES
  ***************************************************************************/
 
 int   print      (const char* fmt, ...);
-int   println    (const char* fmt, ...);
-
 int   eprint     (const char* fmt, ...);
-int   eprintln   (const char* fmt, ...);
-
 int   fprint     (File file, const char* fmt, ...);
-int   fprintln   (File file, const char* fmt, ...);
 
 int   bprint     (char* buf, const char* fmt, ...);
 int   bnprint    (char* buf, int n, const char* fmt, ...);
 
 int   vfprint    (File file, const char* fmt, va_list);
-int   vfprintln  (File file, const char* fmt, va_list);
-
 int   vbprint    (char* buf, int n, const char* fmt, va_list);
 int   vbnprint   (char* buf, int n, const char* fmt, va_list);
-
 
 #ifdef __cplusplus
 }
@@ -69,12 +64,8 @@ int   vbnprint   (char* buf, int n, const char* fmt, va_list);
 
 #ifdef _WIN32
     #include <windows.h>
-    #define NEWLINE "\r\n"
-    #define NEWLINE_LEN 2
 #else
     #include <unistd.h>
-    #define NEWLINE "\n"
-    #define NEWLINE_LEN 1
 #endif
 
 File print_get_stdout(void)
@@ -132,16 +123,6 @@ int fprint(File file, const char* fmt, ...)
     return ret;
 }
 
-int fprintln(File file, const char* fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    int ret = vfprint(file, fmt, ap);
-    va_end(ap);
-    ret += print_write_file(file, NEWLINE, NEWLINE_LEN);
-    return ret;
-}
-
 int print(const char* fmt, ...)
 {
     va_list ap;
@@ -152,17 +133,6 @@ int print(const char* fmt, ...)
     return ret;
 }
 
-int println(const char* fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    File out = print_get_stdout();
-    int ret = vfprint(out, fmt, ap);
-    va_end(ap);
-    ret += print_write_file(out, NEWLINE, NEWLINE_LEN);
-    return ret;
-}
-
 int eprint(const char* fmt, ...)
 {
     va_list ap;
@@ -170,17 +140,6 @@ int eprint(const char* fmt, ...)
     File err = print_get_stderr();
     int ret = vfprint(err, fmt, ap);
     va_end(ap);
-    return ret;
-}
-
-int eprintln(const char* fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    File err = print_get_stderr();
-    int ret = vfprint(err, fmt, ap);
-    va_end(ap);
-    ret += print_write_file(err, NEWLINE, NEWLINE_LEN);
     return ret;
 }
 
