@@ -10,13 +10,30 @@
 #include <stdint.h>
 
 /***************************************************************************
+ *          TYPES
+ ***************************************************************************/
+
+typedef int8_t    int8;
+typedef int16_t   int16;
+typedef int32_t   int32;
+typedef int64_t   int64;
+
+typedef uint8_t   uint8;
+typedef uint16_t  uint16;
+typedef uint32_t  uint32;
+typedef uint64_t  uint64;
+
+typedef size_t    usize;
+typedef ptrdiff_t isize;
+
+/***************************************************************************
  *          MACROS
  ***************************************************************************/
 
-#define KB(n)  (((uint64_t)(n)) << 10)
-#define MB(n)  (((uint64_t)(n)) << 20)
-#define GB(n)  (((uint64_t)(n)) << 30)
-#define TB(n)  (((uint64_t)(n)) << 40)
+#define KB(n)  (((uint64)(n)) << 10)
+#define MB(n)  (((uint64)(n)) << 20)
+#define GB(n)  (((uint64)(n)) << 30)
+#define TB(n)  (((uint64)(n)) << 40)
 
 #define THOUSAND(n) ((n)*1000)
 #define MILLION(n)  ((n)*1000000)
@@ -119,5 +136,24 @@
 #else
     #define assert(x) (void)(x)
 #endif
+
+/***************************************************************************
+ *          CONSTANTS
+ ***************************************************************************/
+
+static uint64 max_uint64 = 0xffffffffffffffffull;
+static uint32 max_uint32 = 0xffffffff;
+static uint16 max_uint16 = 0xffff;
+static uint8  max_uint8  = 0xff;
+
+static int64  max_int64 = (int64)0x7fffffffffffffffll;
+static int32  max_int32 = (int32)0x7fffffff;
+static int16  max_int16 = (int16)0x7fff;
+static int8   max_int8  =  (int8)0x7f;
+
+static int64  min_int64 = (int64)0x8000000000000000ll;
+static int32  min_int32 = (int32)0x80000000;
+static int16  min_int16 = (int16)0x8000;
+static int8   min_int8  =  (int8)0x80;
 
 #endif // BASE_H

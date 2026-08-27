@@ -26,20 +26,20 @@ extern "C" {
  *          INCLUDES
  ***************************************************************************/
 
-#include <stdint.h>
+#include "base.h" 
 
 /***************************************************************************
  *          PROTOTYPES
  ***************************************************************************/
 
-void       rand_seed    (uint64_t initstate, uint64_t initseq);
-uint32_t   rand_int     (void);
-float      rand_unif    (void);
-float      rand_norm    (float mu, float sigma);
-float      rand_exp     (float lambda);
-uint32_t   rand_pois    (float mu);
-bool       rand_bern    (float p);
-uint32_t   rand_binom   (uint32_t n, float p);
+void     rand_seed    (uint64 initstate, uint64 initseq);
+uint32   rand_int     (void);
+float    rand_unif    (void);
+float    rand_norm    (float mu, float sigma);
+float    rand_exp     (float lambda);
+uint32   rand_pois    (float mu);
+bool     rand_bern    (float p);
+uint32   rand_binom   (uint32 n, float p);
 
 #ifdef __cplusplus
 }
@@ -58,8 +58,8 @@ uint32_t   rand_binom   (uint32_t n, float p);
 
 typedef struct 
 {
-    uint64_t state;         
-    uint64_t inc;
+    uint64 state;         
+    uint64 inc;
     float prev_norm;
 
 } prng_state;
@@ -68,21 +68,21 @@ static prng_state s_prng_state = {
     0x853c49e6748fea9bull, 0xda3e39cb94b95bdbull, NAN
 };
 
-static uint32_t prng_rand_r(prng_state* rng)
+static uint32 prng_rand_r(prng_state* rng)
 {
-    uint64_t oldstate = rng->state;
+    uint64 oldstate = rng->state;
     rng->state = oldstate * 6364136223846793005ull + rng->inc;
-    uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
-    uint32_t rot = oldstate >> 59u;
+    uint32 xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
+    uint32 rot = oldstate >> 59u;
     return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
-uint32_t rand_int(void)
+uint32 rand_int(void)
 {
     return prng_rand_r(&s_prng_state);
 }
 
-static void prng_seed_r(prng_state* rng, uint64_t initstate, uint64_t initseq)
+static void prng_seed_r(prng_state* rng, uint64 initstate, uint64 initseq)
 {
     rng->state = 0U;
     rng->inc = (initseq << 1u) | 1u;
@@ -91,7 +91,7 @@ static void prng_seed_r(prng_state* rng, uint64_t initstate, uint64_t initseq)
     prng_rand_r(rng);
 }
 
-void rand_seed(uint64_t seed, uint64_t seq)
+void rand_seed(uint64 seed, uint64 seq)
 {
     prng_seed_r(&s_prng_state, seed, seq);
 }
@@ -145,9 +145,9 @@ float rand_exp(float lambda)
     return prng_rexp_r(&s_prng_state, lambda);
 }
 
-static uint32_t prng_rpois_r(prng_state* rng, float mu)
+static uint32 prng_rpois_r(prng_state* rng, float mu)
 {
-    uint32_t k = 0;
+    uint32 k = 0;
     float t = 0.0f;
     while (t < mu)
     {
@@ -157,7 +157,7 @@ static uint32_t prng_rpois_r(prng_state* rng, float mu)
     return k;
 }
 
-uint32_t rand_pois(float mu)
+uint32 rand_pois(float mu)
 {
     return prng_rpois_r(&s_prng_state, mu);
 }
@@ -172,16 +172,16 @@ bool rand_bern(float p)
     return prng_rbern_r(&s_prng_state, p);
 }
 
-static uint32_t prng_rbinom_r(prng_state* rng, uint32_t n, float p)
+static uint32 prng_rbinom_r(prng_state* rng, uint32 n, float p)
 {
-    uint32_t x = 0;
+    uint32 x = 0;
     for (int i = 0; i < n; i++)
-        x += (uint32_t)prng_rbern_r(rng, p);
+        x += (uint32)prng_rbern_r(rng, p);
 
     return x;
 }
 
-uint32_t rand_binom(uint32_t n, float p)
+uint32 rand_binom(uint32 n, float p)
 {
     return prng_rbinom_r(&s_prng_state, n, p);
 }

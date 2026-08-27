@@ -23,8 +23,7 @@ extern "C" {
  *          INCLUDES
  ***************************************************************************/
 
-#include <assert.h>
-#include <stdint.h>
+#include "base.h"
 
 /***************************************************************************
  *          TYPES
@@ -39,9 +38,9 @@ enum
 typedef struct ArenaParams ArenaParams;
 struct ArenaParams
 {
-    uint64_t commit_size;    // size of memory chunks when committing memory from os
-    uint64_t reserve_size;   // size of vmemory address space when reserving memory from os or capacity of backing memory
-    uint8_t* backing_memory; // backing memory to use for arena instead of committing mem from os
+    uint64 commit_size;    // size of memory chunks when committing memory from os
+    uint64 reserve_size;   // size of vmemory address space when reserving memory from os or capacity of backing memory
+    uint8* backing_memory; // backing memory to use for arena instead of committing mem from os
     ArenaFlags flags;
 };
 
@@ -50,12 +49,12 @@ struct Arena
 {
     Arena* prev;
     Arena* current;
-    uint64_t base_pos;
-    uint64_t commit_size;
-    uint64_t reserve_size;
-    uint64_t pos;
-    uint64_t committed;
-    uint64_t reserved;
+    uint64 base_pos;
+    uint64 commit_size;
+    uint64 reserve_size;
+    uint64 pos;
+    uint64 committed;
+    uint64 reserved;
     ArenaFlags flags;
 };
 
@@ -63,7 +62,7 @@ typedef struct ArenaTemp ArenaTemp;
 struct ArenaTemp
 {
     Arena* arena;   // underlying arena
-    uint64_t pos;   // position when created
+    uint64 pos;   // position when created
 };
 
 /***************************************************************************
@@ -73,18 +72,18 @@ struct ArenaTemp
 Arena*    arena_alloc              (ArenaParams);
 void      arena_release            (Arena* arena);
 
-uint64_t  arena_position           (Arena* arena);
-uint64_t  arena_commited           (Arena* arena);
-uint64_t  arena_reserved           (Arena* arena);
+uint64    arena_position           (Arena* arena);
+uint64    arena_commited           (Arena* arena);
+uint64    arena_reserved           (Arena* arena);
 
-void*     arena_push               (Arena* arena, uint64_t size);
-void*     arena_push_no_zero       (Arena* arena, uint64_t size);
+void*     arena_push               (Arena* arena, uint64 size);
+void*     arena_push_no_zero       (Arena* arena, uint64 size);
 
-void*     arena_push_align         (Arena* arena, uint64_t size, uint64_t align);
-void*     arena_push_align_no_zero (Arena* arena, uint64_t size, uint64_t align);
+void*     arena_push_align         (Arena* arena, uint64 size, uint64 align);
+void*     arena_push_align_no_zero (Arena* arena, uint64 size, uint64 align);
 
-void      arena_pop_to             (Arena* arena, uint64_t pos);
-void      arena_pop                (Arena* arena, uint64_t size);
+void      arena_pop_to             (Arena* arena, uint64 pos);
+void      arena_pop                (Arena* arena, uint64 size);
 void      arena_clear              (Arena* arena);
 
 ArenaTemp arena_temp_begin         (Arena* arena);
@@ -110,11 +109,9 @@ void      arena_temp_end           (ArenaTemp temp);
 
 #define ARENA_HEADER_SIZE 128
 
-#include <assert.h>
-#include <stdbool.h>
 #include <string.h>
 
-static const uint64_t arena_default_alignment = sizeof(void*);
+static const uint64 arena_default_alignment = sizeof(void*);
 
 #define ARENA_MAX(a,b) \
     (((a) > (b)) ? (a) : (b))
@@ -130,24 +127,24 @@ static const uint64_t arena_default_alignment = sizeof(void*);
 
 typedef struct
 {
-    uint64_t page_size;
-    uint64_t allocation_granularity;
+    uint64 page_size;
+    uint64 allocation_granularity;
 
 } VirtualMemoryInfo;
 
 static VirtualMemoryInfo  vm_get_info   (void);
-static void*              vm_reserve    (uint64_t size);
-static bool               vm_commit     (void* ptr, uint64_t size);
-static bool               vm_decommit   (void* ptr, uint64_t size);
-static void               vm_release    (void* ptr, uint64_t size);
+static void*              vm_reserve    (uint64 size);
+static bool               vm_commit     (void* ptr, uint64 size);
+static bool               vm_decommit   (void* ptr, uint64 size);
+static void               vm_release    (void* ptr, uint64 size);
 
 Arena* arena_alloc(ArenaParams* params)
 {
     Arena* arena = NULL;
 
     char* base = params.backing_memory;
-    uint64_t commit_size = params->commit_size;
-    uint64_t reserve_size = params->reserve_size;
+    uint64 commit_size = params->commit_size;
+    uint64 reserve_size = params->reserve_size;
 
     if (base == NULL)
     {
@@ -194,13 +191,13 @@ void arena_release(Arena* arena)
     }
 }
 
-static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool zero)
+static void* arena_push_impl(Arena* arena, uint64 size, uint64 align, bool zero)
 {
-    uint64_t size_to_zero = size;
+    uint64 size_to_zero = size;
     Arena* current = arena->current;
 
-    uint64_t new_pos = ARENA_ALIGN_UP_POW2(current->pos, align);
-    uint64_t new_pos_end = new_pos + size;
+    uint64 new_pos = ARENA_ALIGN_UP_POW2(current->pos, align);
+    uint64 new_pos_end = new_pos + size;
 
     if (new_pos_end > current->reserved && !(arena->flags & ARENA_NO_CHAIN))
     {
@@ -228,11 +225,11 @@ static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool z
     }
     else if (arena->committed < new_pos_end)
     {
-        uint64_t commit_size = ARENA_ALIGN_UP_POW2(pos_new_end, current->commit_size) - current->committed;
+        uint64 commit_size = ARENA_ALIGN_UP_POW2(pos_new_end, current->commit_size) - current->committed;
         char* commit_start = (char *)current + current->committed;
         vm_commit(commit_start, commit_size);
         current->committed += commit_size;
-        size_to_zero = 0;
+        sizeo_zero = 0;
     }
 
     void* result = NULL;
@@ -248,33 +245,33 @@ static void* arena_push_impl(Arena* arena, uint64_t size, uint64_t align, bool z
   return result;
 }
 
-void* arena_push(Arena* arena, uint64_t size)
+void* arena_push(Arena* arena, uint64 size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 1);
 }
 
-void* arena_push_no_zero(Arena* arena, uint64_t size)
+void* arena_push_no_zero(Arena* arena, uint64 size)
 {
     return arena_push_impl(arena, size, arena_default_alignment, 0);
 }
 
-void* arena_push_align(Arena* arena, uint64_t size, uint64_t align)
+void* arena_push_align(Arena* arena, uint64 size, uint64 align)
 {
     return arena_push_impl(arena, size, align, 1);
 }
 
-void* arena_push_align_no_zero(Arena* arena, uint64_t size, uint64_t align)
+void* arena_push_align_no_zero(Arena* arena, uint64 size, uint64 align)
 {
     return arena_push_impl(arena, size, align, 0);
 }
 
-uint64_t arena_position(Arena *arena)
+uint64 arena_position(Arena *arena)
 {
   Arena* current = arena->current;
   return current->base_pos + current->pos;
 }
 
-void arena_pop_to(Arena *arena, uint64_t pos)
+void arena_pop_to(Arena *arena, uint64 pos)
 {
     pos = ARENA_MAX(ARENA_HEADER_SIZE, pos);
     Arena* current = arena->current;
@@ -286,7 +283,7 @@ void arena_pop_to(Arena *arena, uint64_t pos)
     }
 
     arena->current = current;
-    uint64_t new_pos = pos - current->base_pos;
+    uint64 new_pos = pos - current->base_pos;
     assert(new_pos <= current->pos);
     current->pos = new_pos;
 }
@@ -296,10 +293,10 @@ void arena_clear(Arena* arena)
     arena_pop_to(arena, 0);
 }
 
-void arena_pop(Arena *arena, uint64_t amount)
+void arena_pop(Arena *arena, uint64 amount)
 {
-    uint64_t pos_old = arena_pos(arena);
-    uint64_t pos_new = pos_old;
+    uint64 pos_old = arena_pos(arena);
+    uint64 pos_new = pos_old;
     if (amount < pos_old)
     {
         pos_new = pos_old - amount;
@@ -332,17 +329,17 @@ static VirtualMemoryInfo vm_get_info(void)
 #if defined(_WIN32)
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
-    info.page_size = (uint64_t)sysinfo.dwPageSize;
-    info.allocation_granularity = (uint64_t)sysinfo.dwAllocationGranularity;
+    info.page_size = (uint64)sysinfo.dwPageSize;
+    info.allocation_granularity = (uint64)sysinfo.dwAllocationGranularity;
 #else
-    uint64_t page_size = (uint64_t)sysconf(_SC_PAGESIZE);
+    uint64 page_size = (uint64)sysconf(_SC_PAGESIZE);
     info.page_size = page_size;
     info.allocation_granularity = page_size;
 #endif
     return info;
 }
 
-static void* vm_reserve(uint64_t size)
+static void* vm_reserve(uint64 size)
 {
     void* result = NULL;
     VirtualMemoryInfo info = vm_get_info();
@@ -355,7 +352,7 @@ static void* vm_reserve(uint64_t size)
     return ptr;
 }
 
-static bool vm_commit(void* ptr, uint64_t size)
+static bool vm_commit(void* ptr, uint64 size)
 {
     VirtualMemoryInfo info = vm_get_info();
     size = ARENA_ALIGN_UP_POW2(size, info.page_size);
@@ -368,7 +365,7 @@ static bool vm_commit(void* ptr, uint64_t size)
 #endif
 }
 
-bool vm_decommit(void* ptr, uint64_t size)
+bool vm_decommit(void* ptr, uint64 size)
 {
     VirtualMemoryInfo info = vm_get_info();
     size = ARENA_ALIGN_UP_POW2(size, info.page_size);
@@ -382,7 +379,7 @@ bool vm_decommit(void* ptr, uint64_t size)
 #endif
 }
 
-void vm_release(void* ptr, uint64_t size)
+void vm_release(void* ptr, uint64 size)
 {
 #if defined(_WIN32)
     (void)size;
@@ -406,9 +403,9 @@ void vm_release(void* ptr, uint64_t size)
 #include <assert.h>
 #include <stdlib.h>
 
-static bool is_aligned(void* ptr, uint64_t align)
+static bool is_aligned(void* ptr, uint64 align)
 {
-    return (((uintptr_t)ptr) & (align - 1)) == 0;
+    return (((uintptr)ptr) & (align - 1)) == 0;
 }
 
 typedef struct
@@ -424,7 +421,7 @@ void arena_unit_tests(void)
     Arena* arena = arena_alloc(params);
     assert(arena->committed == arena_default_commit_size);
     assert(arena->reserved == arena_default_reserve_size);
-    uint64_t start = arena->pos;
+    uint64 start = arena->pos;
     void* p1 = arena_push(arena, 64);
     assert(p1 != NULL);
     assert(arena->pos >= start + 64);
@@ -439,10 +436,10 @@ void arena_unit_tests(void)
     arena_release(arena);
 
     arena = arena_alloc((ArenaParams){0});
-    uint64_t aligns[] = {1,2,4,8,16,32,64};
-    for(uint64_t i = 0; i < sizeof(aligns)/sizeof(aligns[0]); i++)
+    uint64 aligns[] = {1,2,4,8,16,32,64};
+    for(uint64 i = 0; i < sizeof(aligns)/sizeof(aligns[0]); i++)
     {
-        uint64_t align = aligns[i];
+        uint64 align = aligns[i];
         void* ptr = arena_push_align(arena, 13, align);
         assert(is_aligned(ptr, align));
     }
@@ -450,14 +447,14 @@ void arena_unit_tests(void)
   
 
     arena = arena_alloc((ArenaParams){0});
-    uint8_t* mem = ARENA_PUSH_ARRAY(arena, uint8_t, 128);
-    for(uint64_t i = 0; i < 128; i++)
+    uint8* mem = ARENA_PUSH_ARRAY(arena, uint8, 128);
+    for(uint64 i = 0; i < 128; i++)
         assert(mem[i] == 0);
     arena_release(arena);
 
 
     arena = arena_alloc((ArenaParams){0});
-    uint64_t start = arena->pos;
+    uint64 start = arena->pos;
     arena_push(arena, 128);
     arena_pop(arena, 128);
     assert(arena->pos == start);
@@ -466,7 +463,7 @@ void arena_unit_tests(void)
 
     arena = arena_alloc((ArenaParams){0});
     arena_push(arena, 64);
-    uint64_t mark = arena->pos;
+    uint64 mark = arena->pos;
     arena_push(arena, 256);
     arena_pop_to(arena, mark);
     assert(arena->pos == mark);
@@ -481,7 +478,7 @@ void arena_unit_tests(void)
 
 
     arena = arena_alloc((ArenaParams){0});
-    uint64_t start = arena->pos;
+    uint64 start = arena->pos;
     ArenaTemp temp = arena_temp_begin(arena);
     arena_push(arena, 512);
     assert(arena->pos > start);
@@ -491,10 +488,10 @@ void arena_unit_tests(void)
 
 
     arena = arena_alloc((ArenaParams){0});
-    uint64_t start = arena->pos;
+    uint64 start = arena->pos;
     ArenaTemp t1 = arena_temp_begin(arena);
     arena_push(arena, 64);
-    uint64_t p1 = arena->pos;
+    uint64 p1 = arena->pos;
     ArenaTemp t2 = arena_temp_begin(arena);
     arena_push(arena, 128);
     arena_temp_end(t2);
@@ -507,7 +504,7 @@ void arena_unit_tests(void)
     ArenaParams params = {0};
     params.commit_size = KB(4);
     arena = arena_alloc(params);
-    uint64_t initial_commit = arena->committed;
+    uint64 initial_commit = arena->committed;
     assert(initial_commit = KB(4));
     arena_push(arena, KB(5));
     assert(arena->committed > initial_commit);
@@ -529,10 +526,10 @@ void arena_unit_tests(void)
 
 
     arena = arena_alloc((ArenaParams){0});
-    for(uint64_t i = 0; i < 100; i++)
+    for(uint64 i = 0; i < 100; i++)
     {
-        uint64_t size  = (i % 256) + 1;
-        uint64_t align = 1ULL << (i % 6);
+        uint64 size  = (i % 256) + 1;
+        uint64 align = 1ULL << (i % 6);
         void* ptr = arena_push_align(arena, size, align);
         assert(ptr != 0);
         assert(is_aligned(ptr, align));

@@ -17,8 +17,7 @@ extern "C" {
  *          INCLUDES
  ***************************************************************************/
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "base.h"
 
 /***************************************************************************
  *          TYPES
@@ -26,7 +25,7 @@ extern "C" {
 
 typedef struct 
 {
-   uint64_t  fd;
+   uint64  fd;
 
 } File;
 
@@ -57,6 +56,23 @@ typedef struct
 
 } FileIter;
 
+
+typedef int FilePropertyFlags;
+enum
+{
+    FILE_PROPERTY_DIR = (1 << 0)
+};
+
+typedef struct
+{
+    string name;
+    int64 file_size;
+    DenseTime created; 
+    DenseTime modified;
+    FilePropertyFlags flags;
+
+} FileProperties;
+
 /***************************************************************************
  *          PROTOTYPES
  ***************************************************************************/
@@ -71,9 +87,9 @@ void      file_close        (File);
 int       file_write        (File, const char*, int);
 int       file_read         (File, char*, int);
 
-int64_t   file_get_size     (File file);
-int64_t   file_get_pos      (File file);
-int       file_set_pos      (File file, int64_t pos);
+int64     file_get_size     (File file);
+int64     file_get_pos      (File file);
+int       file_set_pos      (File file, int64 pos);
 
 // bool      file_iter_start   (FileIter* iter, char* path, FileIterFlags flags);
 // bool      file_iter_next    (FileIter* iter, FileInfo* info);
@@ -105,9 +121,9 @@ File file_stdin(void)
 {
     File result = {0};
 #ifdef _WIN32
-    result.fd = (uint64_t)GetStdHandle(STD_INPUT_HANDLE);
+    result.fd = (uint64)GetStdHandle(STD_INPUT_HANDLE);
 #else
-    result.fd = (uint64_t)STDIN_FILENO;
+    result.fd = (uint64)STDIN_FILENO;
 #endif
     return result;
 }
@@ -116,9 +132,9 @@ File file_stdout(void)
 {
     File result = {0};
 #ifdef _WIN32
-    result.fd = (uint64_t)GetStdHandle(STD_OUTPUT_HANDLE);
+    result.fd = (uint64)GetStdHandle(STD_OUTPUT_HANDLE);
 #else
-    result.fd = (uint64_t)STDOUT_FILENO;
+    result.fd = (uint64)STDOUT_FILENO;
 #endif
     return result;
 }
@@ -127,9 +143,9 @@ File file_stderr(void)
 {
     File result = {0};
 #ifdef _WIN32
-    result.fd = (uint64_t)GetStdHandle(STD_ERROR_HANDLE);
+    result.fd = (uint64)GetStdHandle(STD_ERROR_HANDLE);
 #else
-    result.fd = (uint64_t)STDERR_FILENO;
+    result.fd = (uint64)STDERR_FILENO;
 #endif
     return result;
 }
@@ -153,7 +169,7 @@ File file_open(char* path, FileAccessFlags flags)
     HANDLE handle = CreateFileA(path, access_flags, share_mode, NULL, creation_disposition, FILE_ATTRIBUTE_NORMAL, 0);
     if(handle != INVALID_HANDLE_VALUE)
     {
-        result.fd = (uint64_t)handle;
+        result.fd = (uint64)handle;
     }
     else
     {
@@ -203,7 +219,7 @@ int file_write(File file, const char* buf, int len)
 #ifdef _WIN32
     WriteFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
 #else
-    result = (int)write((int)file.fd, buf, (size_t)len);
+    result = (int)write((int)file.fd, buf, (usize)len);
 #endif
     return result;
 }
@@ -214,30 +230,30 @@ int file_read(File file, char* buf, int len)
 #ifdef _WIN32
     ReadFile((HANDLE)(file.fd), (void*)buf, (DWORD)len, (DWORD*)&result, NULL);
 #else
-    result = (int)read((int)file.fd, (void*)buf, (size_t)len);
+    result = (int)read((int)file.fd, (void*)buf, (usize)len);
 #endif
     return result;
 }
 
-int64_t file_get_size(File file)
+int64 file_get_size(File file)
 {
 #ifdef _WIN32
     LARGE_INTEGER file_size = {0};
     BOOL success = GetFileSizeEx((HANDLE)file.fd, &file_size);
     if (success)
-        return (int64_t)file_size.QuadPart;
+        return (int64)file_size.QuadPart;
     else
         return 0;
 #else
     struct stat file_stats = {0};
     fstat(file.fd, &file_stats);
-    return (int64_t)file_stats.st_size;
+    return (int64)file_stats.st_size;
 #endif
 }
 
-int64_t file_get_pos(File file)
+int64 file_get_pos(File file)
 {
-    int64_t result = 0;
+    int64 result = 0;
 #ifdef _WIN32
     LARGE_INTEGER zero = {0};
     LARGE_INTEGER position;
@@ -245,18 +261,18 @@ int64_t file_get_pos(File file)
     if (!SetFilePointerEx((HANDLE)file.fd, zero, &position, FILE_CURRENT))
         result = -1;
     else
-        result =(int64_t)position.QuadPart;
+        result =(int64)position.QuadPart;
 #else
     off_t pos = lseek(fd, 0, SEEK_CUR);
     if (pos == (off_t)-1)
         result = -1;
     else 
-        result = (int64_t)pos;
+        result = (int64)pos;
 #endif
     return result;
 }
 
-int file_set_pos(File file, int64_t pos)
+int file_set_pos(File file, int64 pos)
 {
 #ifdef _WIN32
     LARGE_INTEGER offset;
