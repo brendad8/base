@@ -27,7 +27,8 @@ extern "C" {
  *          MACROS
  ***************************************************************************/
 
-#define prints(str)              print("%s\n", str)
+#define prints(str)              print("%s", str)
+#define printsln(str)            print("%s\n", str)
 #define println(fmt, ...)        print(fmt "\n", __VA_ARGS__)
 #define eprintln(fmt, ...)       eprint(fmt "\n", __VA_ARGS__)
 #define fprintln(file, fmt, ...) fprint(file, fmt "\n", __VA_ARGS__)
