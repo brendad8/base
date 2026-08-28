@@ -477,8 +477,8 @@ DateTime date_time_from_unix(int64 unix_time_msec)
 #undef DT_MIN_TO_USEC 
 #undef DT_SEC_TO_USEC 
 #undef DT_MSEC_TO_USEC
+#undef DT_DAYS_PER_400_YEARS
 
-#define DT_DAYS_PER_400_YEARS 146097LL
 #endif // DATETIME_IMPLEMENTATION
 
 #endif // DATETIME_H
