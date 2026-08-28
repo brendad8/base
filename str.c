@@ -1,200 +1,266 @@
 
-#include <stdarg.h>
-
 #include "str.h"
 
-// #define STB_SPRINTF_IMPLEMENTATION
-// #include "deps/stb_sprintf.h"
+bool char_is_space(char c)
+{
+  return (c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\f' || c == '\v');
+}
 
-/*********************************************************************************/
+bool char_is_upper(char c)
+{
+  return ('A' <= c && c <= 'Z');
+}
+
+bool char_is_lower(char c)
+{
+  return ('a' <= c && c <= 'z');
+}
+
+bool char_is_alpha(char c)
+{
+    return (char_is_upper(c) || char_is_lower(c));
+}
+
+bool char_is_slash(char c)
+{
+    return (c == '/' || c == '\\');
+}
+
+bool char_is_digit(char c, int base)
+{
+    bool result = false;
+    if (0 < base && base <= 16)
+    {
+        result = (('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F'));
+    }
+    return result;
+}
+
+// int char_symbol_to_value(char c)
+// {
+//     if (c >= '0' && c <= '9')
+//         return c - '0';
+//
+//     if (c >= 'a' && c <= 'z')
+//         return c - 'a' + 10;
+//
+//     if (c >= 'A' && c <= 'Z')
+//         return c - 'A' + 10;
+//
+//     return -1;
+// }
+
+char char_to_lower(char c)
+{
+    if (char_is_upper(c))
+    {
+        c += ('a' - 'A');
+    }
+    return c;
+}
+
+char char_to_upper(char c)
+{
+    if (char_is_lower(c))
+    {
+        c += ('A' - 'a');
+    }
+    return c;
+}
+
+usize cstr_length(char* c)
+{
+    usize length = 0;
+    if(c)
+    {
+        char* p = c;
+        for (; *p != 0; p += 1);
+        length = (usize)(p - c);
+    }
+    return length;
+}
+
 string str_new(char* ptr, size_t len) 
 {
     string s = { ptr, len };
     return s;
 }
 
-/*********************************************************************************/
 string str_from_cstr(char* ptr) 
 {
     size_t len = cstr_length(ptr);
     return str_new(ptr, len);
 }
 
-/*********************************************************************************/
+string str_from_range(char* first, char* one_past_last) 
+{
+    string result = {first, (usize)(one_past_last - first)};
+    return result;
+}
+
+static int memcmp_ci(char* a, char* b, usize size)
+{
+    int result = 0;
+    for (usize i = 0; i < size; i++)
+    {
+        result += char_to_lower(a[i]) - char_to_lower(b[i]);
+        if (result) break;
+    }
+    return result;
+}
+
 bool str_equal(string a, string b) 
 {
-    if (a.len != b.len) 
-        return 0;
-
-    return memcmp(a.ptr, b.ptr, a.len) == 0;
+    bool result = false;
+    if (a.len == b.len) 
+    {
+        result = memcmp(a.ptr, b.ptr, a.len) == 0;
+    }
+    return result;
 }
 
-/*********************************************************************************/
-bool str_equal_ci(string a, string b)
+bool str_equal_ci(string a, string b, bool ignore_case) 
 {
-    if (a.len != b.len)
-        return false;
-
-    for (size_t i = 0; i < a.len; i++)
+    bool result = false;
+    if (a.len == b.len) 
     {
-        if (char_to_lower(a.ptr[i]) != char_to_lower(b.ptr[i]))
-            return false;
+        result = memcmp_ci(a.ptr, b.ptr, a.len) == 0;
+    }
+    return result;
+}
+
+
+static int str_compare_impl(string a, string b, bool ignore_case) 
+{
+    int cmp = 0;
+    usize min_len = MIN(a.len, b.len);
+
+    if (ignore_case)
+    {
+        cmp = memcmp_ci(a.ptr, b.ptr, min_len);
+    }
+    else
+    {
+        cmp = memcmp(a.ptr, b.ptr, min_len);
+    }
+    
+    if (cmp == 0)
+    {
+        cmp = (int)(a.len - b.len)
     }
 
-    return true;
+    return cmp;
 }
 
-/*********************************************************************************/
-int str_compare(string a, string b) 
+int str_compare(void* a, void* b)
 {
-    size_t min_len = a.len < b.len ? a.len : b.len;
-    int cmp = memcmp(a.ptr, b.ptr, min_len);
-
-    return cmp != 0 ? cmp : (int)(a.len - b.len);
+    str_compare_impl(*(string*)a, *(string*)b, false);
 }
 
-/*********************************************************************************/
-int str_compare_ci(string a, string b)
+int str_compare_ci(void* a, void* b)
 {
-    size_t min_len = a.len < b.len ? a.len : b.len;
+    str_compare_impl(*(string*)a, *(string*)b, true);
+}
 
-    for (size_t i = 0; i < min_len; i++)
+
+bool char_equal(char a, char b, int flags)
+{
+    if (flags & STR_MATCH_CI) 
     {
-        unsigned char ca = char_to_lower(a.ptr[i]);
-        unsigned char cb = char_to_lower(b.ptr[i]);
-
-        if (ca != cb)
-            return (int)ca - (int)cb;
+        a = char_to_lower(a);
+        b = char_to_lower(b);
     }
-
-    if (a.len < b.len)
-        return -1;
-
-    if (a.len > b.len)
-        return 1;
-
-    return 0;
+    return (a == b);
 }
-
-/*********************************************************************************/
-int str_find_idx_first(string s, string pattern)
+    
+int str_find(string s, string sub, StringMatchFlags flags)
 {
-    if (s.len < pattern.len || pattern.len == 0) 
+    if (sub.len > s.len)
         return -1;
 
-    for (size_t i = 0; i <= (s.len - pattern.len); i++) 
+    if (flags & STR_MATCH_REVERSE)
     {
-        for (size_t j = 0; j < pattern.len; j++) 
+        // NOTE(bcall): weird decrementing loop since usize can't be negative
+        for (usize i = s.len - sub.len + 1; i-- > 0;)
         {
-            if (s.ptr[i+j] != pattern.ptr[j]) 
-                break; 
-            if (j == pattern.len-1)
+            usize j = 0;
+
+            for (; j < sub.len; j++)
+            {
+                if (!char_equal(s[i + j], sub[j], flags))
+                    break;
+            }
+
+            if (j == sub.len)
                 return i;
         }
     }
-    return -1;
-}
-
-/*********************************************************************************/
-int str_find_idx_first_ci(string s, string pattern)
-{
-    if (s.len < pattern.len || pattern.len == 0) 
-        return -1;
-
-    for (size_t i = 0; i <= (s.len - pattern.len); i++) 
+    else
     {
-        for (size_t j = 0; j < pattern.len; j++) 
+        for (usize i = 0; i <= s.len - sub.len; i++)
         {
-            if (char_to_lower(s.ptr[i+j]) != char_to_lower(pattern.ptr[j])) 
-                break; 
-            if (j == pattern.len-1)
+            usize j = 0;
+
+            for (; j < sub.len; j++)
+            {
+                if (!char_equal(s[i + j], sub[j], flags))
+                    break;
+            }
+
+            if (j == sub.len)
                 return i;
         }
     }
+
     return -1;
 }
 
-/*********************************************************************************/
-int str_find_idx_last(string s, string pattern)
-{
-    if (s.len < pattern.len || pattern.len == 0) 
-        return -1;
 
-    for (size_t i = s.len - 1; i >= pattern.len - 1; i--) 
-    {
-        for (size_t j = 0; j < pattern.len; j++) 
-        {
-            if (s.ptr[i-j] != pattern.ptr[pattern.len - j - 1]) 
-                break; 
-            if (j == pattern.len - 1)
-                return (i - pattern.len + 1);
-        }
-    }
-    return -1;
+bool str_contains(string s, string sub, StringMatchFlags flags) 
+{
+    return str_find(s, sub, flags) != -1;
 }
 
-/*********************************************************************************/
-int str_find_idx_last_ci(string s, string pattern)
+bool str_starts_with(string s, string prefix, StringMatchFlags flags) 
 {
-    if (s.len < pattern.len || pattern.len == 0) 
-        return -1;
-
-    for (size_t i = s.len - 1; i >= pattern.len - 1; i--) 
-    {
-        for (size_t j = 0; j < pattern.len; j++) 
-        {
-            if (char_to_lower(s.ptr[i-j]) != char_to_lower(pattern.ptr[pattern.len - j - 1])) 
-                break; 
-            if (j == pattern.len - 1)
-                return (i - pattern.len + 1);
-        }
-    }
-    return -1;
-}
-
-/*********************************************************************************/
-bool str_contains(string s, string pattern) 
-{
-    return str_find_idx_first(s, pattern) != -1;
-}
-
-/*********************************************************************************/
-bool str_contains_ci(string s, string pattern)
-{
-    return str_find_idx_first_ci(s, pattern) != -1;
-}
-
-/*********************************************************************************/
-bool str_starts_with(string s, string prefix) 
-{
+    bool result = false;
     if (s.len < prefix.len || prefix.len == 0)
         return 0;
 
-    return memcmp(s.ptr, prefix.ptr, prefix.len) == 0;
-}
-
-/*********************************************************************************/
-bool str_starts_with_ci(string s, string prefix)
-{
-    if (s.len < prefix.len || prefix.len == 0)
-        return false;
-
-    for (size_t i = 0; i < prefix.len; i++)
+    if (s.len >= prefix.len)
     {
-        if (char_to_lower(s.ptr[i]) != char_to_lower(prefix.ptr[i]))
-            return false;
+        if (flags & STR_MATCH_CI)
+        {
+            result = memcmp(s.ptr, prefix.ptr, prefix.len) == 0;
+        }
+        else if (flags & STR_MATCH_CI)
+        {
+            result = memcmp_ci(s.ptr, prefix.ptr, prefix.len) == 0;
+        }
     }
-
-    return true;
+    return result;
 }
 
+
 /*********************************************************************************/
-bool str_ends_with(string s, string suffix) 
+bool str_ends_with(string s, string suffix, StringMatchFlags flags) 
 {
-    if (s.len < suffix.len || suffix.len == 0)
+    bool result = false;
+    if (s.len < prefix.len || prefix.len == 0)
         return 0;
 
-    return memcmp(s.ptr + (s.len - suffix.len), suffix.ptr, suffix.len) == 0;
+    if (s.len >= prefix.len)
+    {
+        if (flags & STR_MATCH_CI)
+        {
+            result = memcmp(s.ptr + s.len - suffix.len, suffix.ptr, suffix.len) == 0;
+        }
+        else if (flags & STR_MATCH_CI)
+        {
+            result = memcmp_ci(s.ptr + s.len - suffix.len, suffix.len) == 0;
+        }
+    }
+    return result;
 }
 
 /*********************************************************************************/
