@@ -18,6 +18,8 @@ extern "C" {
  ***************************************************************************/
 
 #include "base.h"
+#include "str.h"
+#include "datetime.h"
 
 /***************************************************************************
  *          TYPES
@@ -77,19 +79,19 @@ typedef struct
  *          PROTOTYPES
  ***************************************************************************/
 
-File      file_stdin        (void);
-File      file_stdout       (void);
-File      file_stderr       (void);
+File   file_stdin     (void);
+File   file_stdout    (void);
+File   file_stderr    (void);
 
-File      file_open         (char*, FileAccessFlags);
-void      file_close        (File);
+File   file_open      (char*, FileAccessFlags);
+void   file_close     (File);
 
-int       file_write        (File, const char*, int);
-int       file_read         (File, char*, int);
+int    file_write     (File, const char*, int);
+int    file_read      (File, char*, int);
 
-int64     file_get_size     (File file);
-int64     file_get_pos      (File file);
-int       file_set_pos      (File file, int64 pos);
+int64  file_get_size  (File file);
+int64  file_get_pos   (File file);
+int    file_set_pos   (File file, int64 pos);
 
 // bool      file_iter_start   (FileIter* iter, char* path, FileIterFlags flags);
 // bool      file_iter_next    (FileIter* iter, FileInfo* info);

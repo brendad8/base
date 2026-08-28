@@ -31,9 +31,9 @@ struct string
 typedef int StringFindFlags;
 enum
 {
-    STR_FIND_CI   = (1<<0)
-    STR_FIND_LAST = (1<<1)
-}
+    STR_FIND_CI      = (1<<0)
+    STR_FIND_REVERSE = (1<<1)
+};
 
 // typedef struct StringNode StringNode;
 // struct StringNode 
@@ -57,6 +57,8 @@ enum
 
 string  str_new           (char* ptr, size_t len);
 string  str_from_cstr     (char* ptr);
+string  str_from_range    (char* start, char* one_past_last);
+string  str_slice         (string s, usize start_idx, usize len);
 
 bool    str_equal         (string a, string b);
 bool    str_equal_ci      (string a, string b);
@@ -65,14 +67,9 @@ int     str_compare       (void* a, void* b);
 int     str_compare_ci    (void* a, void* b);
 
 int     str_find          (string s, string pattern, StringFindFlags flags);
-
-// int     str_find          (string s, string sub, StringMatchFlags flags);
-// bool    str_contains      (string s, string sub, StringMatchFlags flags);
-// bool    str_starts_with   (string s, string prefix, StringMatchFlags flags);
-// bool    str_ends_with     (string s, string suffix, StringMatchFlags flags);
-
-string  str_slice         (string s, size_t start, size_t end);
-string  str_slice_len     (string s, size_t start, size_t length);
+bool    str_contains      (string s, string sub, StringFindFlags flags);
+bool    str_starts_with   (string s, string prefix, StringFindFlags flags);
+bool    str_ends_with     (string s, string suffix, StringFindFlags flags);
 
 string  str_trim          (string s);
 string  str_trim_left     (string s);
@@ -85,6 +82,7 @@ string  str_cat           (Arena *arena, string a, string b);
 
 string  str_to_lower      (Arena *arena, string s);
 string  str_to_upper      (Arena *arena, string s);
+
 
 bool    char_is_space     (char c);
 bool    char_is_upper     (char c);

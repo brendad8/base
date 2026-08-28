@@ -21,6 +21,7 @@ extern "C" {
  ***************************************************************************/
 
 #include <stdarg.h>
+
 #include "file.h" // for File struct
 
 /***************************************************************************
@@ -69,7 +70,7 @@ int   vbnprint   (char* buf, int n, const char* fmt, va_list);
     #include <unistd.h>
 #endif
 
-File print_get_stdout(void)
+static File print_get_stdout(void)
 {
     File result = {0};
 #ifdef _WIN32
@@ -80,7 +81,7 @@ File print_get_stdout(void)
     return result;
 }
 
-File print_get_stderr(void)
+static File print_get_stderr(void)
 {
     File result = {0};
 #ifdef _WIN32
@@ -179,3 +180,4 @@ int bnprint(char* buf, int n, const char* fmt, ...)
 #endif // PRINT_IMPLEMENTATION
       
 #endif // PRINT_H
+       
