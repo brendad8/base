@@ -22,6 +22,7 @@ extern "C" {
 
 #include <stdarg.h>
 
+#include "base.h"
 #include "file.h" // for File struct
 
 /***************************************************************************
@@ -38,12 +39,21 @@ extern "C" {
  *          PROTOTYPES
  ***************************************************************************/
 
-int   print      (const char* fmt, ...);
-int   eprint     (const char* fmt, ...);
-int   fprint     (File file, const char* fmt, ...);
+#if COMPILER_CLANG || COMPILER_GCC
+    #define PRINTF_FORMAT(fmt_index, first_arg) \
+        __attribute__((format(printf, fmt_index, first_arg)))
+#elif defined(COMPILER_MSVC)
+    #define PRINTF_FORMAT(fmt_index, first_arg)
+#else
+    #define PRINTF_FORMAT(fmt_index, first_arg)
+#endif
 
-int   bprint     (char* buf, const char* fmt, ...);
-int   bnprint    (char* buf, int n, const char* fmt, ...);
+int   print      (const char* fmt, ...) PRINTF_FORMAT(1, 2);
+int   eprint     (const char* fmt, ...) PRINTF_FORMAT(1, 2);
+int   fprint     (File file, const char* fmt, ...) PRINTF_FORMAT(2, 3);
+
+int   bprint     (char* buf, const char* fmt, ...) PRINTF_FORMAT(2, 3);
+int   bnprint    (char* buf, int n, const char* fmt, ...) PRINTF_FORMAT(3, 4);
 
 int   vfprint    (File file, const char* fmt, va_list);
 int   vbprint    (char* buf, const char* fmt, va_list);
@@ -62,7 +72,7 @@ int   vbnprint   (char* buf, int n, const char* fmt, va_list);
 // NOTE(bcall): without NOUNALIGNED define, zig cc debug programs will panic for known reason. 
 #define STB_SPRINTF_NOUNALIGNED
 #define STB_SPRINTF_IMPLEMENTATION
-#include "third_party/stb_sprintf.h"
+include "third_party/stb_sprintf.h"
 
 #ifdef _WIN32
     #include <windows.h>
