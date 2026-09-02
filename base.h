@@ -6,6 +6,7 @@
  *          INCLUDES
  ***************************************************************************/
 
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,6 +24,7 @@ typedef uint16_t  uint16;
 typedef uint32_t  uint32;
 typedef uint64_t  uint64;
 
+typedef uint8_t   byte;
 typedef size_t    usize;
 typedef ptrdiff_t isize;
 
@@ -155,5 +157,19 @@ static int64  min_int64 = (int64)0x8000000000000000ll;
 static int32  min_int32 = (int32)0x80000000;
 static int16  min_int16 = (int16)0x8000;
 static int8   min_int8  =  (int8)0x80;
+
+/***************************************************************************
+ *          MISC
+ ***************************************************************************/
+
+#if COMPILER_CLANG || COMPILER_GCC
+    #define PRINTF_FORMAT(fmt_index, first_arg) \
+        __attribute__((format(printf, fmt_index, first_arg)))
+#elif defined(COMPILER_MSVC)
+    #define PRINTF_FORMAT(fmt_index, first_arg)
+#else
+    #define PRINTF_FORMAT(fmt_index, first_arg)
+#endif
+
 
 #endif // BASE_H

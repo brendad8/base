@@ -32,8 +32,8 @@ extern "C" {
 typedef int ArenaFlags;
 enum
 {
-    ARENA_NO_CHAIN    = 1 << 0;
-}
+    ARENA_NO_CHAIN    = 1 << 0
+};
 
 typedef struct ArenaParams ArenaParams;
 struct ArenaParams

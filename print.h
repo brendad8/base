@@ -39,15 +39,6 @@ extern "C" {
  *          PROTOTYPES
  ***************************************************************************/
 
-#if COMPILER_CLANG || COMPILER_GCC
-    #define PRINTF_FORMAT(fmt_index, first_arg) \
-        __attribute__((format(printf, fmt_index, first_arg)))
-#elif defined(COMPILER_MSVC)
-    #define PRINTF_FORMAT(fmt_index, first_arg)
-#else
-    #define PRINTF_FORMAT(fmt_index, first_arg)
-#endif
-
 int   print      (const char* fmt, ...) PRINTF_FORMAT(1, 2);
 int   eprint     (const char* fmt, ...) PRINTF_FORMAT(1, 2);
 int   fprint     (File file, const char* fmt, ...) PRINTF_FORMAT(2, 3);
