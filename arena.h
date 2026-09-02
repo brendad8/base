@@ -389,7 +389,7 @@ void vm_release(void* ptr, uint64 size)
 #endif
 }
 
-#endif
+// #endif
 
 #undef ARENA_MAX
 #undef ARENA_STACK_PUSH_N

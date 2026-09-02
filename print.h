@@ -63,7 +63,7 @@ int   vbnprint   (char* buf, int n, const char* fmt, va_list);
 // NOTE(bcall): without NOUNALIGNED define, zig cc debug programs will panic for known reason. 
 #define STB_SPRINTF_NOUNALIGNED
 #define STB_SPRINTF_IMPLEMENTATION
-include "third_party/stb_sprintf.h"
+#include "third_party/stb_sprintf.h"
 
 #ifdef _WIN32
     #include <windows.h>

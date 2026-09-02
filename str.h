@@ -31,7 +31,7 @@ struct string
 typedef int StringFindFlags;
 enum
 {
-    STR_FIND_CI      = (1<<0)
+    STR_FIND_CI      = (1<<0),
     STR_FIND_REVERSE = (1<<1)
 };
 
@@ -98,7 +98,4 @@ usize   cstr_length       (char* c);
 
 
 #endif // BASE_STRING_H
-
-
-#ifdef STR_IMPLEMENTATION
 
