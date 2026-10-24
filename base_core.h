@@ -38,10 +38,10 @@ typedef int64_t   b64;
  *          DEFINES
  ***************************************************************************/
 
-#if defined(_MSC_VER)
-    #define COMPILER_MSVC 1
-#elif defined(__clang__)
+#if defined(__clang__)
     #define COMPILER_CLANG 1
+#elif defined(_MSC_VER)
+    #define COMPILER_MSVC 1
 #elif defined(__GNUC__)
     #define COMPILER_GCC 1
 #else

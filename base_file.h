@@ -2,9 +2,9 @@
 #pragma once
 
 #include "base_core.h"
-#include "base_ctx.h"
+#include "base_thread_context.h"
 #include "base_allocator.h"
-#include "base_str.h"
+#include "base_string.h"
 
 typedef struct 
 {
@@ -67,19 +67,19 @@ File   file_stdout      (void);
 File   file_stderr      (void);
 
 File   file_open        (const u8* path, FileAccessFlags flags);
-File   file_open_str8   (str8 path, FileAccessFlags flags);
+File   file_open_str8   (String8 path, FileAccessFlags flags);
 
 void   file_close       (File file);
 
 int    file_write       (File file, const u8* buf, int size);
-int    file_write_str8  (File file, str8 str);
+int    file_write_str8  (File file, String8 str);
 
 int    file_read        (File file, u8* buf, int size);
-int    file_read_str8   (File file, str8* str);
+int    file_read_str8   (File file, String8* str);
 
-str8   file_read_all                   (Allocator allocator, File file);
-// str8   file_read_all_from_path         (Allocator allocator, const u8* path);
-// str8   file_read_all_from_path_str8    (Allocator allocator, str8 path);
+String8   file_read_all                   (Allocator allocator, File file);
+// String8   file_read_all_from_path         (Allocator allocator, const u8* path);
+// String8   file_read_all_from_path_str8    (Allocator allocator, String8 path);
 
 u64    file_get_size    (File file);
 

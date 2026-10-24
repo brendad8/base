@@ -93,15 +93,15 @@ file_open(const u8* path, FileAccessFlags flags)
 }
 
 File 
-file_open_str8(str8 path, FileAccessFlags flags)
+file_open_str8(String8 path, FileAccessFlags flags)
 {
     File result = {0};
-    ArenaTemp temp = ctx_scratch_begin(0, 0);
+    ArenaTemp temp = tctx_scratch_begin(0, 0);
     u8* path_temp = arena_push_array(temp.arena, u8, path.len + 1); 
     mem_copy(path_temp, path.ptr, path.len);
     path_temp[path.len] = '\0';
     result = file_open(path_temp, flags);
-    ctx_scratch_end(temp);
+    tctx_scratch_end(temp);
     return result;
 }
 
@@ -163,9 +163,9 @@ file_get_size(File file)
 	return result;
 }
 
-str8 file_read_all(Allocator a, File file)
+String8 file_read_all(Allocator a, File file)
 {
-    str8 result = {0};
+    String8 result = {0};
     u64 file_size = file_get_size(file);
     if (file_size)
     {
