@@ -83,7 +83,6 @@ string  str_cat           (Arena *arena, string a, string b);
 string  str_to_lower      (Arena *arena, string s);
 string  str_to_upper      (Arena *arena, string s);
 
-
 bool    char_is_space     (char c);
 bool    char_is_upper     (char c);
 bool    char_is_lower     (char c);
