@@ -63,7 +63,7 @@ file_open(const u8* path, FileAccessFlags flags)
     HANDLE handle = CreateFileA(path, access_flags, share_mode, NULL, creation_disposition, FILE_ATTRIBUTE_NORMAL, 0);
     if(handle != INVALID_HANDLE_VALUE)
     {
-        result.fd = (uint64)handle;
+        result.fd = (u64)handle;
     }
     else
     {
